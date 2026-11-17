@@ -6,16 +6,18 @@
  * (or ?lang=) selects between them, and validate.js checks the two key sets
  * match so a missing translation is caught before anyone runs the study.
  *
- * GROUP-DEPENDENT STRINGS
- * -----------------------
- * The two groups (?group=participant / ?group=control) see the same study;
- * only four things are worded differently:
- *   anchoring.body, prompt.main, grid.question_episode, and the word-rating
- *   instruction and question (text/en/words.js).
- * Each of these is an object with one entry per group. Everything else is
- * the same for both groups, so it must not presume either one — the
- * practice and grid instructions describe the task mechanically and point
- * to the question shown on screen.
+ * GROUP- AND EPISODE-DEPENDENT STRINGS
+ * -------------------------------------
+ * Participants (?group=participant) complete a derealization block and an
+ * ordinary block; controls (?group=control) an ordinary block and an
+ * expectation block. What differs is keyed in these objects:
+ *   prompt.main.<episode>                 the question above the images
+ *   reinstate.body.<episode>              the screen that opens each block
+ *   episodes.screens.<group>.<episode>    the episode-selection screens
+ *   words: instruction.<group>, question_short.<group>  (text/en/words.js)
+ * with <episode> = derealization | ordinary | expectation. validate.js
+ * checks every one has every version in both languages. Everything else
+ * is the same for both groups, so it must not presume either one.
  *
  * FRAMING RULES — these wordings are deliberate, not incidental:
  *
@@ -27,7 +29,11 @@
  *    English instruction. (The rated words and the questionnaire items are
  *    exempt: their wording is the measure.)
  *
- *  - No interview is mentioned anywhere.
+ *  - THE INTERVIEW: only participants were interviewed. Only text that
+ *    only participants see may mention it — strings keyed `participant`
+ *    or `derealization` (only participants have that episode). Controls
+ *    must never see the word "interview". validate.js refuses any other
+ *    string that mentions it, in either language.
  *
  *  - The judgment is anchored on SURROUNDINGS, not on the self. Every
  *    stimulus is a scene, so the instruction has to point at the world.
@@ -45,15 +51,17 @@
  * -----------------------------------------------
  *  - consent.*      the whole consent text (PLACEHOLDER, see below)
  *  - state.items    the four questionnaire items (paste the exact wording)
- * Bracketed gaps like [researcher names] are detected by validate.js: a
- * warning in debug mode, an error on index.html with debug off.
+ *  - the session and block lengths, [TO COMPLETE after pilot]
+ * Bracketed gaps like [researcher names] anywhere in this file are detected
+ * by validate.js: a warning in debug mode, an error on index.html with
+ * debug off.
  * ========================================================================= */
 
 var TEXT_EN = {
 
   lang_name: 'English',
 
-  // --- Incomplete link: no valid ?group= -----------------------------------
+  // --- Incomplete link: no valid ?group= or ?slot= -------------------------
   // Same kind of message as a missing participant ID.
   link: {
     missing_title: 'Incomplete link',
@@ -74,8 +82,11 @@ var TEXT_EN = {
   //    not finished;
   //  - everything else is uploaded only at the very end; closing the page
   //    earlier saves nothing else;
-  //  - the optional answers about the episode (participants only),
-  //    including anything typed, are stored WITH the responses;
+  //  - the answers about the recalled episodes, including anything typed,
+  //    are stored WITH the responses; the few identifying words are
+  //    required, and every other episode question can be answered with
+  //    "Prefer not to say";
+  //  - controls are not told about any interview (they had none).
   //  - without a participant ID, the name and email are what link the
   //    responses to the person.
   consent: {
@@ -84,9 +95,11 @@ var TEXT_EN = {
       '<p>You are invited to take part in a research study about how people ' +
       'perceive their surroundings. It is run by [researcher names] at ' +
       '[institution].</p>' +
-      '<p><b>What you will do:</b> look at pairs of photographs and choose ' +
-      'between them, then answer a few short questions. It takes about ' +
-      '[25] minutes.</p>' +
+      '<p><b>What you will do:</b> bring to mind experiences from your own ' +
+      'life and answer a few short questions about them, then look at pairs ' +
+      'of photographs and choose between them, in two parts with a short ' +
+      'rest in between, and finally answer a few more short questions. It ' +
+      'takes about [TO COMPLETE after pilot] minutes.</p>' +
       '<p><b>Risks:</b> we do not expect any risks beyond those of everyday ' +
       'computer use. Some questions ask about unusual experiences; you may ' +
       'stop at any time.</p>' +
@@ -95,10 +108,12 @@ var TEXT_EN = {
       '<p><b>Your data:</b> your responses are stored under a study ID, ' +
       'without your name. Results are reported only for groups or without ' +
       'identifying information. [Storage period and who has access.] ' +
-      '[Whether anonymised data may be shared publicly, e.g. on OSF.]</p>' +
-      '<p>You may be asked a few short questions about the experience you are ' +
-      'thinking of, such as when and where it happened. These questions are ' +
-      'optional. Your answers, including anything you type, are stored ' +
+      '[Whether anonymised data may be shared publicly, e.g. on Zenodo.]</p>' +
+      '<p>As part of the study, you will be asked to write a few words of ' +
+      'your own to identify each experience you bring to mind, and to answer ' +
+      'a few short questions about it, such as when and where it happened. ' +
+      'Each of these questions can be answered with &ldquo;Prefer not to ' +
+      'say&rdquo;. Your answers, including anything you type, are stored ' +
       'with your responses, so please do not include names or other details ' +
       'that could identify you or anyone else.</p>' +
       '<p><b>Voluntary participation:</b> taking part is voluntary. You may ' +
@@ -122,9 +137,11 @@ var TEXT_EN = {
       '<p>You are invited to take part in a research study about how people ' +
       'perceive their surroundings. It is run by [researcher names] at ' +
       '[institution].</p>' +
-      '<p><b>What you will do:</b> look at pairs of photographs and choose ' +
-      'between them, then answer a few short questions. It takes about ' +
-      '[25] minutes.</p>' +
+      '<p><b>What you will do:</b> bring to mind experiences from your own ' +
+      'life and answer a few short questions about them, then look at pairs ' +
+      'of photographs and choose between them, in two parts with a short ' +
+      'rest in between, and finally answer a few more short questions. It ' +
+      'takes about [TO COMPLETE after pilot] minutes.</p>' +
       '<p><b>Risks:</b> we do not expect any risks beyond those of everyday ' +
       'computer use. Some questions ask about unusual experiences; you may ' +
       'stop at any time.</p>' +
@@ -135,11 +152,13 @@ var TEXT_EN = {
       'file as your responses, which only the research team can access. ' +
       'Results are reported only for groups or without identifying ' +
       'information. [Storage period and who has access.] [Whether ' +
-      'anonymised data may be shared publicly, e.g. on OSF; your name and ' +
+      'anonymised data may be shared publicly, e.g. on Zenodo; your name and ' +
       'email address are never shared.]</p>' +
-      '<p>You may be asked a few short questions about the experience you are ' +
-      'thinking of, such as when and where it happened. These questions are ' +
-      'optional. Your answers, including anything you type, are stored ' +
+      '<p>As part of the study, you will be asked to write a few words of ' +
+      'your own to identify each experience you bring to mind, and to answer ' +
+      'a few short questions about it, such as when and where it happened. ' +
+      'Each of these questions can be answered with &ldquo;Prefer not to ' +
+      'say&rdquo;. Your answers, including anything you type, are stored ' +
       'with your responses, so please do not include names or other details ' +
       'that could identify you or anyone else.</p>' +
       '<p><b>Voluntary participation:</b> taking part is voluntary. You may ' +
@@ -168,36 +187,78 @@ var TEXT_EN = {
   },
 
   // --- Prompts shown above the image pair -------------------------------
-  // GROUP-DEPENDENT. Shown on every image trial, practice included.
+  // EPISODE-DEPENDENT: the question depends on the block's episode, not on
+  // the group. Shown on every image trial, practice included.
   prompt: {
     main: {
-      participant: 'Which looks more like how your surroundings looked during that episode?',
-      control:     'Which looks more like how the surroundings might look to someone experiencing derealization?',
+      derealization: 'Which looks more like how your surroundings looked during that episode?',
+      ordinary:      'Which looks more like how your surroundings looked during the ordinary episode you described?',
+      expectation:   'Which looks more like how you think the surroundings look to someone experiencing derealization?',
     },
   },
 
-  // --- Anchoring (just before the practice) -----------------------------
-  // body is GROUP-DEPENDENT. The questions are shown to participants only
-  // (each can be switched off in CONFIG.anchoring.questions), and none is
-  // required. They ask when, how long, where and how clearly — never how
-  // it felt or looked. when / duration / where are short text fields with
-  // the example `hint` shown beside them; keep the examples free of visual
-  // words and of anything identifying.
-  anchoring: {
-    title: 'Before you begin',
-    body: {
-      participant:
-        '<p>Please bring to mind your most recent episode that you remember ' +
-        'clearly, in which your surroundings felt different from usual.</p>' +
-        '<p>Throughout this study, please answer about that episode.</p>',
-      control:
-        '<p>Derealization is an experience in which one&rsquo;s surroundings ' +
-        'feel strange or detached, as if one were cut off from the world.</p>' +
-        '<p>In this study, please imagine how the surroundings might look to ' +
-        'someone experiencing derealization.</p>',
+  // --- Episode selection (after calibration, before block 1) -------------
+  // One screen per episode of the group (screens.<group>.<episode>). Each
+  // RECALLED episode (not the expectation) asks for a few identifying
+  // words (required) and the five questions below, each of which must be
+  // answered — "Prefer not to say" is an answer. The questions only help
+  // bring the episode back: never how it felt or looked, nothing about
+  // clarity, vividness or colour. Keep the examples free of visual words
+  // and of anything identifying.
+  // {DR_WORDS} = the participant's own words for the derealization episode.
+  episodes: {
+    screens: {
+      participant: {
+        derealization: {
+          title: 'The episode you described in the interview',
+          body:
+            '<p>In the interview, you described an episode in which your ' +
+            'surroundings felt different from usual. Please bring that ' +
+            'episode to mind now.</p>' +
+            '<p>Write a few words below that will let you recognise it later, ' +
+            'such as where you were or what you were doing. The questions ' +
+            'after that are there to help you bring it back.</p>',
+        },
+        ordinary: {
+          title: 'An ordinary episode',
+          body:
+            '<p>Now please bring to mind a different episode: one in a ' +
+            '<b>similar setting</b> to the episode you described in the ' +
+            'interview (<span class="ep-words">{DR_WORDS}</span>) &mdash; a ' +
+            'similar place, time of day and lighting &mdash; from <b>about as ' +
+            'long ago</b>, in which your surroundings looked <b>as usual</b>.</p>' +
+            '<p>Write a few words below that will let you recognise it later. ' +
+            'The questions after that are there to help you bring it back.</p>',
+        },
+      },
+      control: {
+        ordinary: {
+          title: 'An ordinary episode',
+          body:
+            '<p>Please bring to mind an ordinary episode from the <b>last six ' +
+            'months</b>: a time when you were somewhere and your surroundings ' +
+            'looked as usual.</p>' +
+            '<p>Write a few words below that will let you recognise it later, ' +
+            'such as where you were or what you were doing. The questions ' +
+            'after that are there to help you bring it back.</p>',
+        },
+        expectation: {
+          title: 'Derealization',
+          body:
+            '<p>Derealization is an experience in which one&rsquo;s surroundings ' +
+            'feel strange or detached, as if one were cut off from the world.</p>' +
+            '<p>In one part of this study, please imagine how you think the ' +
+            'surroundings look to someone experiencing derealization.</p>',
+        },
+      },
     },
-    // Shown above the questions, only when at least one is switched on.
-    questions_intro: 'A few optional questions about that episode:',
+    words: {
+      label: 'A few words to identify this episode',
+      hint:  'e.g. walking home after work',
+    },
+    questions_intro:
+      'Questions to help you bring it back. Please answer each one; if you ' +
+      'prefer not to answer, choose &ldquo;Prefer not to say&rdquo;.',
     questions: {
       when: {
         label: 'When was it?',
@@ -211,14 +272,60 @@ var TEXT_EN = {
         label: 'Where were you?',
         hint:  'e.g. at home, on a train, in a shop',
       },
-      clarity: {
-        label:       'How clearly do you remember it?',
-        anchor_low:  'not at all clearly',
-        anchor_high: 'very clearly',
+      tone: {
+        label:       'How did it feel emotionally?',
+        anchor_low:  'very unpleasant',
+        anchor_high: 'very pleasant',
+      },
+      intensity: {
+        label:       'How emotionally intense was it?',
+        anchor_low:  'not at all intense',
+        anchor_high: 'extremely intense',
       },
     },
     prefer_not: 'Prefer not to say',
+    incomplete: 'Please answer every question to continue. ' +
+                '&ldquo;Prefer not to say&rdquo; counts as an answer.',
     button:     'Continue',
+  },
+
+  // --- Reinstatement: the first screen of each block ----------------------
+  // EPISODE-DEPENDENT. Names the block's episode; {WORDS} = the
+  // participant's own identifying words for it. {N} = 1 or 2, {TOTAL} = 2.
+  reinstate: {
+    title: 'Part {N} of {TOTAL}',
+    body: {
+      derealization:
+        '<p>In this part, please think of <b>the episode you described in ' +
+        'the interview</b>, the one you called:</p>' +
+        '<p><span class="ep-words">{WORDS}</span></p>' +
+        '<p>Bring it back to mind as well as you can: where you were, what ' +
+        'was around you, what you were doing.</p>',
+      ordinary:
+        '<p>In this part, please think of <b>the ordinary episode you ' +
+        'described</b>, the one you called:</p>' +
+        '<p><span class="ep-words">{WORDS}</span></p>' +
+        '<p>Bring it back to mind as well as you can: where you were, what ' +
+        'was around you, what you were doing.</p>',
+      expectation:
+        '<p>In this part, please imagine <b>how you think the surroundings ' +
+        'look to someone experiencing derealization</b>.</p>' +
+        '<p>Derealization is an experience in which one&rsquo;s surroundings ' +
+        'feel strange or detached, as if one were cut off from the world.</p>',
+    },
+    button: 'Continue',
+  },
+
+  // --- Rest between the two blocks ---------------------------------------
+  // A fixed minute (CONFIG.timing.rest_ms). Continue appears only when the
+  // countdown reaches zero.
+  rest: {
+    title:  'Rest',
+    body:   '<p>Please take a one-minute rest before the second part. You ' +
+            'may look away from the screen. Please stay in full screen.</p>',
+    wait:   'The Continue button will appear when the minute is over.',
+    done:   'You can continue when you are ready.',
+    button: 'Continue',
   },
 
   // --- Catch trials -----------------------------------------------------
@@ -233,7 +340,9 @@ var TEXT_EN = {
 
   // --- Practice ---------------------------------------------------------
   // The same for both groups: the task is described mechanically, and the
-  // question itself is the group-dependent prompt above the pictures.
+  // question itself is the episode-dependent prompt above the pictures.
+  // {N} = practice trials in this block, {TOTAL} = main trials in this
+  // block, {QUESTION} = this block's question.
   practice: {
     title: 'The task',
     body:
@@ -245,12 +354,18 @@ var TEXT_EN = {
       'impression.</p>' +
       '<p>Use the <b>&#8592;</b> and <b>&#8594;</b> arrow keys to choose the ' +
       'picture on the left or on the right.</p>' +
-      '<p>We will begin with a few practice trials.</p>',
+      '<p>We will begin with {N} practice trials.</p>',
+    // Before block 2's practice.
+    body_b2:
+      '<p>The second part works the same way as the first. We will begin ' +
+      'with {N} practice trials.</p>',
+    question_changed:
+      '<p><b>The question has changed.</b> It is now:</p>' +
+      '<p class="question-now">{QUESTION}</p>',
     continue_hint: 'Press <b>SPACE</b> to begin the practice.',
 
-    // Shown once, after the first practice response only. Deliberately says
-    // nothing about WHY the participant chose what they chose — confirming
-    // a reason would invite consistency-seeking on later trials.
+    // Shown after the first practice response of each block. Deliberately
+    // says nothing about WHY the participant chose what they chose.
     feedback_first:
       'You chose this one. There is no right or wrong answer &mdash; just ' +
       'go with your impression.',
@@ -258,12 +373,18 @@ var TEXT_EN = {
     end_title: 'End of practice',
     end_body:
       '<p>That is the end of the practice.</p>' +
-      '<p>The main part works the same way. It has 205 trials and takes ' +
-      'about 10 minutes. There are short breaks along the way.</p>' +
+      '<p>The main part works the same way. It has {TOTAL} trials and takes ' +
+      'about [TO COMPLETE after pilot] minutes. There are short breaks along ' +
+      'the way.</p>' +
       '<p><b>Occasionally a screen will appear with no pictures</b>, asking ' +
       'you to press a particular arrow key. These check that you are still ' +
       'reading the screen. Take your time on them &mdash; there is no time ' +
       'limit, and you only get one press.</p>',
+    end_body_b2:
+      '<p>That is the end of the practice.</p>' +
+      '<p>This part also has {TOTAL} trials, with short breaks along the way, ' +
+      'and occasional screens with no pictures asking you to press a ' +
+      'particular arrow key.</p>',
     end_hint: 'Press <b>SPACE</b> to begin.',
   },
 
@@ -422,63 +543,6 @@ var TEXT_EN = {
                   'emailed it, you may close this page.',
   },
 
-  // --- Grid blocks ------------------------------------------------------
-  // Two blocks: `episode` after the pair trials, `normal` after the word
-  // ratings. Each has its own short instruction screen. The episode
-  // instructions are the same for both groups and point to the question
-  // on screen; question_episode is GROUP-DEPENDENT. The normal block's
-  // question is the same for both groups.
-  grid: {
-    episode: {
-      title: 'Choosing a column',
-      instructions:
-        '<p>On the next four screens you will see three scenes, one in each ' +
-        'row. Each scene is shown several times across the screen, adjusted to ' +
-        'a different degree each time. Each <b>column</b> shows one degree of ' +
-        'adjustment.</p>' +
-        '<p>Answer the question at the top of each screen by choosing a ' +
-        'column. Click anywhere in a column to choose it.</p>' +
-        '<p>If no column fits, choose <b>None of these</b>.</p>' +
-        '<p>You can change your choice before pressing Continue. There is no ' +
-        'time limit.</p>',
-    },
-    normal: {
-      title: 'One more set of screens',
-      instructions:
-        '<p>The next four screens work the same way, with different ' +
-        'scenes.</p>' +
-        '<p>This time, choose the column that looks most like how your ' +
-        'surroundings <b>normally</b> look.</p>' +
-        '<p>Click anywhere in a column to choose it. You can change your ' +
-        'choice before pressing Continue. There is no time limit.</p>',
-    },
-    button_begin:    'Begin',
-    question_episode: {
-      participant: 'Which column looks most like how your surroundings looked during that episode?',
-      control:     'Which column looks most like how the surroundings might look to someone experiencing derealization?',
-    },
-    question_normal: 'Which column looks most like how your surroundings normally look?',
-    none:            'None of these',
-    button_continue: 'Continue',
-    progress:        'Screen {DONE} of {TOTAL}',
-    // Shown right after a screen answered "None of these" (episode block,
-    // CONFIG.blocks.grid_none_followup), under the shrunk grid. Not
-    // required; recorded on that screen's row as none_detail. The options
-    // point to POSITIONS, never to visual qualities. Keep the codes, and
-    // keep them identical in text/ja.
-    none_followup: {
-      question: 'You chose &ldquo;None of these&rdquo;. Which comes closest?',
-      options: [
-        { code: 'beyond_left',  label: 'Further than the column at the far left' },
-        { code: 'beyond_right', label: 'Further than the column at the far right' },
-        { code: 'between',      label: 'Somewhere between two of the columns' },
-        { code: 'other_way',    label: 'Different in a way these pictures don&rsquo;t show' },
-        { code: 'cant_say',     label: 'I can&rsquo;t say' },
-      ],
-      button: 'Continue',
-    },
-  },
-
   // --- State items (optional block at the end) --------------------------
   // >>> PLACEHOLDERS: paste the exact published English wording of items
   // 2, 13, 19 and 29 into `label`. Keep the ids and the order. <<<
@@ -498,11 +562,11 @@ var TEXT_EN = {
   },
 
   // --- Breaks -----------------------------------------------------------
-  // {DONE} and {TOTAL} are filled in from the trial list (205 main trials,
-  // a break after every 41).
+  // {DONE} and {TOTAL} are filled in per block (200 main trials, breaks
+  // after trials 40, 80, 120 and 160 — design.json).
   brk: {
     title: 'Short break',
-    body: '<p>You have completed {DONE} of {TOTAL} trials.</p>' +
+    body: '<p>You have completed {DONE} of {TOTAL} trials in this part.</p>' +
           '<p>Take a moment to rest if you like. Please stay in full screen.</p>',
     hint: 'Press <b>SPACE</b> when you are ready to continue.',
   },

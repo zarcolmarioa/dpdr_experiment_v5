@@ -3,13 +3,15 @@
  *
  * ⚠️  DRAFT TRANSLATION — NOT REVIEWED BY A NATIVE SPEAKER  ⚠️
  *
- * Every string added or changed for the v4 design is listed, with its
- * English, in text/ja/STRINGS_TO_CHECK.md for a native speaker to check.
- * The most load-bearing for the science:
+ * Every string added or changed for the v4 and v5b designs is listed, with
+ * its English, in text/ja/STRINGS_TO_CHECK.md for a native speaker to
+ * check. The most load-bearing for the science:
  *
- *   prompt.main            — the question the study turns on (both groups).
- *   anchoring.body         — fixes what every judgment is about.
- *   grid.question_episode  — the episode-grid question (both groups).
+ *   prompt.main.<episode>  — the question the study turns on, one per
+ *                            episode (derealization / ordinary /
+ *                            expectation).
+ *   episodes.screens       — the episode-selection screens, per group.
+ *   reinstate.body         — the screen that opens each block.
  *   catch.instruction      — must be unmistakable; a confusing translation
  *                            here produces false exclusions.
  *
@@ -17,18 +19,23 @@
  *   - Never DESCRIBE the experience with visual words (no equivalents of
  *     foggy, blurred, faded, dull, colourless, unreal, dreamlike, flat,
  *     veiled, as if behind glass).
- *   - Never mention an interview.
+ *   - The interview (面接) may be mentioned ONLY in text that only
+ *     participants see: strings keyed `participant` or `derealization`.
+ *     Controls were not interviewed and must never see 面接 / インタビュー;
+ *     validate.js checks this.
  *   - Anchor on SURROUNDINGS (周囲の風景), not on the self.
  *   - Acknowledge the adjustment without specifying colour or contrast.
  *   - Nothing suggesting a detection task ("which looks more edited").
- *   - Group-dependent strings are objects keyed participant / control.
+ *   - Group-dependent strings are keyed participant / control, and
+ *     episode-dependent strings derealization / ordinary / expectation.
  *
  * The clinical term (現実感喪失) should match the wording used in the
  * Japanese CDS-29 the participants complete — worth checking against that
  * instrument rather than choosing a translation independently.
  *
- * PLACEHOLDERS to replace before recruiting: consent.* (whole text) and
- * state.items (paste the published Japanese wording).
+ * PLACEHOLDERS to replace before recruiting: consent.* (whole text),
+ * state.items (paste the published Japanese wording), and the session and
+ * block lengths ([TO COMPLETE after pilot]).
  *
  * Key structure must stay identical to the English file. validate.js
  * compares the two and refuses to start if they diverge.
@@ -38,7 +45,7 @@ var TEXT_JA = {
 
   lang_name: '日本語',
 
-  // --- 不完全なリンク（?group= がない） ---------------------------------
+  // --- 不完全なリンク（?group= または ?slot= がない） ---------------------
   link: {
     missing_title: 'リンクが不完全です',
     missing_body:  '<p>このリンクは不完全です。案内メールに記載された' +
@@ -55,8 +62,11 @@ var TEXT_JA = {
     body:
       '<p>人が周囲をどのように知覚するかについての研究へのご協力をお願いして' +
       'います。本研究は[所属機関]の[研究者名]が実施しています。</p>' +
-      '<p><b>参加内容：</b>2枚1組の写真を見てどちらかを選び、その後いくつかの' +
-      '短い質問にお答えいただきます。所要時間は約[25]分です。</p>' +
+      '<p><b>参加内容：</b>ご自身の生活の中の体験を思い浮かべ、それについて' +
+      'いくつかの短い質問にお答えいただきます。その後、2枚1組の写真を見て' +
+      'どちらかを選ぶ課題を、間に短い休憩をはさんで2回に分けて行い、最後に' +
+      'いくつかの短い質問にお答えいただきます。所要時間は約' +
+      '[TO COMPLETE after pilot]分です。</p>' +
       '<p><b>リスク：</b>日常的なコンピュータの使用を超えるリスクは想定して' +
       'いません。一部の質問では、普段とは異なる体験についてお尋ねします。' +
       'いつでも参加を中止できます。</p>' +
@@ -65,9 +75,11 @@ var TEXT_JA = {
       '<p><b>データの扱い：</b>回答はお名前ではなく研究用IDのもとで保存され' +
       'ます。結果は集団としてまとめるか、個人が特定できない形でのみ報告' +
       'します。[保存期間とアクセスできる者][匿名化したデータを公開する' +
-      '可能性（例：OSF）]</p>' +
-      '<p>思い浮かべている体験について、いつ・どこで起きたかなど、いくつかの' +
-      '短い質問をする場合があります。これらの質問への回答は任意です。' +
+      '可能性（例：Zenodo）]</p>' +
+      '<p>研究の一環として、思い浮かべたそれぞれの体験について、あとで' +
+      'それとわかるよう、ご自身の言葉で短く書いていただき、いつ・どこで' +
+      '起きたかなど、いくつかの短い質問にお答えいただきます。これらの質問' +
+      'には、いずれも「回答しない」と答えることができます。' +
       '回答（入力した内容を含む）は回答データとともに保存され' +
       'ますので、ご自身や他の人の名前など、個人を特定できる情報は書かないで' +
       'ください。</p>' +
@@ -87,8 +99,11 @@ var TEXT_JA = {
     body_results_file:
       '<p>人が周囲をどのように知覚するかについての研究へのご協力をお願いして' +
       'います。本研究は[所属機関]の[研究者名]が実施しています。</p>' +
-      '<p><b>参加内容：</b>2枚1組の写真を見てどちらかを選び、その後いくつかの' +
-      '短い質問にお答えいただきます。所要時間は約[25]分です。</p>' +
+      '<p><b>参加内容：</b>ご自身の生活の中の体験を思い浮かべ、それについて' +
+      'いくつかの短い質問にお答えいただきます。その後、2枚1組の写真を見て' +
+      'どちらかを選ぶ課題を、間に短い休憩をはさんで2回に分けて行い、最後に' +
+      'いくつかの短い質問にお答えいただきます。所要時間は約' +
+      '[TO COMPLETE after pilot]分です。</p>' +
       '<p><b>リスク：</b>日常的なコンピュータの使用を超えるリスクは想定して' +
       'いません。一部の質問では、普段とは異なる体験についてお尋ねします。' +
       'いつでも参加を中止できます。</p>' +
@@ -98,10 +113,12 @@ var TEXT_JA = {
       'メールアドレスを入力された場合は、回答と同じファイルに保存され、' +
       '研究チームのみが閲覧できます。結果は集団としてまとめるか、個人が' +
       '特定できない形でのみ報告します。[保存期間とアクセスできる者]' +
-      '[匿名化したデータを公開する可能性（例：OSF）。お名前とメール' +
+      '[匿名化したデータを公開する可能性（例：Zenodo）。お名前とメール' +
       'アドレスは公開しません]</p>' +
-      '<p>思い浮かべている体験について、いつ・どこで起きたかなど、いくつかの' +
-      '短い質問をする場合があります。これらの質問への回答は任意です。' +
+      '<p>研究の一環として、思い浮かべたそれぞれの体験について、あとで' +
+      'それとわかるよう、ご自身の言葉で短く書いていただき、いつ・どこで' +
+      '起きたかなど、いくつかの短い質問にお答えいただきます。これらの質問' +
+      'には、いずれも「回答しない」と答えることができます。' +
       '回答（入力した内容を含む）は回答データとともに保存され' +
       'ますので、ご自身や他の人の名前など、個人を特定できる情報は書かないで' +
       'ください。</p>' +
@@ -127,31 +144,72 @@ var TEXT_JA = {
   },
 
   // --- Prompts shown above the image pair -------------------------------
-  // グループによって異なる。
+  // エピソードによって異なる（グループではない）。練習を含むすべての試行。
   prompt: {
     main: {
-      participant: 'そのエピソード中の周囲の風景の見え方に、より近いのはどちらですか？',
-      control:     '現実感喪失を体験している人にとっての周囲の風景の見え方に、より近いと思うのはどちらですか？',
+      derealization: 'そのエピソード中の周囲の風景の見え方に、より近いのはどちらですか？',
+      ordinary:      'あなたが書いた、いつもどおりだったエピソード中の周囲の風景の見え方に、より近いのはどちらですか？',
+      expectation:   '現実感喪失を体験している人にとっての周囲の風景の見え方に、より近いと思うのはどちらですか？',
     },
   },
 
-  // --- 課題の前に（練習の直前） -------------------------------------------
-  // body はグループによって異なる。質問は participant のみ（任意回答）。
-  // when / duration / where は短い記入欄で、横に例（hint）を表示する。
-  anchoring: {
-    title: '課題の前に',
-    body: {
-      participant:
-        '<p>周囲がいつもと違って感じられたエピソードのうち、はっきりと' +
-        '覚えている中で最も最近のものを一つ思い浮かべてください。</p>' +
-        '<p>この研究では、最後までそのエピソードについてお答えください。</p>',
-      control:
-        '<p>現実感喪失とは、周囲が奇妙に、あるいはよそよそしく感じられ、' +
-        'まるで自分が世界から切り離されているかのように感じられる体験です。</p>' +
-        '<p>この研究では、現実感喪失を体験している人には周囲がどのように' +
-        '見えるかを想像してお答えください。</p>',
+  // --- エピソードの選択（キャリブレーションの後、第1部の前） ---------------
+  // 下書き — 要確認（未レビュー）。グループごとに、エピソードごとの画面。
+  // 思い出すエピソード（expectation 以外）では、短い言葉（必須）と5つの
+  // 質問（いずれも回答必須、「回答しない」も回答として扱う）。
+  // {DR_WORDS} = 現実感喪失のエピソードについて参加者が書いた言葉。
+  episodes: {
+    screens: {
+      participant: {
+        derealization: {
+          title: '面接でお話しいただいたエピソード',
+          body:
+            '<p>面接では、周囲がいつもと違って感じられたエピソードについて' +
+            'お話しいただきました。今、そのエピソードを思い浮かべてください。</p>' +
+            '<p>あとで見てそれとわかるように、下の欄にいくつかの言葉で書いて' +
+            'ください（どこにいたか、何をしていたか、など）。その後の質問は、' +
+            'そのエピソードを思い出しやすくするためのものです。</p>',
+        },
+        ordinary: {
+          title: 'いつもどおりだったエピソード',
+          body:
+            '<p>次に、別のエピソードを思い浮かべてください。面接でお話し' +
+            'いただいたエピソード（<span class="ep-words">{DR_WORDS}</span>）と' +
+            '<b>似た状況</b>（似た場所・時間帯・明るさ）で、<b>同じくらい前</b>に' +
+            '起きた、周囲の風景が<b>いつもどおりに見えていた</b>エピソードです。</p>' +
+            '<p>あとで見てそれとわかるように、下の欄にいくつかの言葉で書いて' +
+            'ください。その後の質問は、そのエピソードを思い出しやすくする' +
+            'ためのものです。</p>',
+        },
+      },
+      control: {
+        ordinary: {
+          title: 'いつもどおりだったエピソード',
+          body:
+            '<p><b>この6か月以内</b>の、いつもどおりだったエピソードを一つ' +
+            '思い浮かべてください。どこかにいて、周囲の風景がいつもどおりに' +
+            '見えていたときのことです。</p>' +
+            '<p>あとで見てそれとわかるように、下の欄にいくつかの言葉で書いて' +
+            'ください（どこにいたか、何をしていたか、など）。その後の質問は、' +
+            'そのエピソードを思い出しやすくするためのものです。</p>',
+        },
+        expectation: {
+          title: '現実感喪失',
+          body:
+            '<p>現実感喪失とは、周囲が奇妙に、あるいはよそよそしく感じられ、' +
+            'まるで自分が世界から切り離されているかのように感じられる体験です。</p>' +
+            '<p>この研究の一部では、現実感喪失を体験している人には周囲の風景が' +
+            'どのように見えていると思うかを想像してお答えください。</p>',
+        },
+      },
     },
-    questions_intro: 'そのエピソードについてのいくつかの質問です（いずれも任意）：',
+    words: {
+      label: 'このエピソードを表すいくつかの言葉',
+      hint:  '例：仕事帰りに歩いていたとき',
+    },
+    questions_intro:
+      'エピソードを思い出しやすくするための質問です。すべての質問にお答え' +
+      'ください。答えたくない場合は「回答しない」を選んでください。',
     questions: {
       when: {
         label: 'それはいつでしたか？',
@@ -165,14 +223,59 @@ var TEXT_JA = {
         label: 'どこにいましたか？',
         hint:  '例：自宅、電車の中、お店',
       },
-      clarity: {
-        label:       'そのエピソードをどのくらいはっきり覚えていますか？',
-        anchor_low:  'まったくはっきりしない',
-        anchor_high: 'とてもはっきり覚えている',
+      tone: {
+        label:       'そのときの気分は、どのようなものでしたか？',
+        anchor_low:  'とても不快',
+        anchor_high: 'とても心地よい',
+      },
+      intensity: {
+        label:       'そのときの感情は、どのくらい強いものでしたか？',
+        anchor_low:  'まったく強くない',
+        anchor_high: '非常に強い',
       },
     },
     prefer_not: '回答しない',
+    incomplete: '続けるには、すべての質問にお答えください。' +
+                '「回答しない」も回答として扱われます。',
     button:     '次へ',
+  },
+
+  // --- 各パートの最初の画面（エピソードの再提示） ----------------------------
+  // 下書き — 要確認（未レビュー）。エピソードによって異なる。
+  // {WORDS} = 参加者が書いた言葉。{N} = 1 または 2、{TOTAL} = 2。
+  reinstate: {
+    title: '第{N}部（全{TOTAL}部）',
+    body: {
+      derealization:
+        '<p>このパートでは、<b>面接でお話しいただいたエピソード</b>について' +
+        '考えてください。あなたが次のように書いたエピソードです：</p>' +
+        '<p><span class="ep-words">{WORDS}</span></p>' +
+        '<p>どこにいたか、周りに何があったか、何をしていたかなど、できるだけ' +
+        '思い出してください。</p>',
+      ordinary:
+        '<p>このパートでは、<b>あなたが書いた、いつもどおりだったエピソード</b>' +
+        'について考えてください。あなたが次のように書いたエピソードです：</p>' +
+        '<p><span class="ep-words">{WORDS}</span></p>' +
+        '<p>どこにいたか、周りに何があったか、何をしていたかなど、できるだけ' +
+        '思い出してください。</p>',
+      expectation:
+        '<p>このパートでは、<b>現実感喪失を体験している人には周囲の風景が' +
+        'どのように見えていると思うか</b>を想像してください。</p>' +
+        '<p>現実感喪失とは、周囲が奇妙に、あるいはよそよそしく感じられ、' +
+        'まるで自分が世界から切り離されているかのように感じられる体験です。</p>',
+    },
+    button: '次へ',
+  },
+
+  // --- 2つのパートの間の休憩 -----------------------------------------------
+  // 下書き — 要確認（未レビュー）。1分間（CONFIG.timing.rest_ms）。
+  rest: {
+    title:  '休憩',
+    body:   '<p>次のパートの前に、1分間休憩してください。画面から目を離して' +
+            'もかまいません。全画面表示のままにしてください。</p>',
+    wait:   '1分たつと「次へ」ボタンが表示されます。',
+    done:   '準備ができたら次へ進んでください。',
+    button: '次へ',
   },
 
   // --- Catch trials -----------------------------------------------------
@@ -194,7 +297,14 @@ var TEXT_JA = {
       '<p>正解・不正解はありません。最初の印象で選んでください。</p>' +
       '<p><b>&#8592;</b> と <b>&#8594;</b> の矢印キーで、左または右の画像を' +
       '選びます。</p>' +
-      '<p>まず練習から始めます。</p>',
+      '<p>まず{N}回の練習から始めます。</p>',
+    // 第2部の練習の前。
+    body_b2:
+      '<p>2つ目のパートも、1つ目と同じ方法で進みます。まず{N}回の練習から' +
+      '始めます。</p>',
+    question_changed:
+      '<p><b>質問が変わりました。</b>新しい質問は次のとおりです：</p>' +
+      '<p class="question-now">{QUESTION}</p>',
     continue_hint: '<b>スペースキー</b>を押すと練習が始まります。',
 
     feedback_first:
@@ -203,12 +313,16 @@ var TEXT_JA = {
     end_title: '練習は終了です',
     end_body:
       '<p>練習はこれで終わりです。</p>' +
-      '<p>本番も同じ方法で進みます。205試行で、約10分かかります。' +
-      '途中に短い休憩があります。</p>' +
+      '<p>本番も同じ方法で進みます。{TOTAL}試行で、約' +
+      '[TO COMPLETE after pilot]分かかります。途中に短い休憩があります。</p>' +
       '<p><b>ときどき、画像のない画面が表示され</b>、特定の矢印キーを押すよう' +
       '指示されます。これは画面を読んでいるかを確認するためのものです。' +
       '制限時間はありませんので、ゆっくり読んでください。押せるのは一度' +
       'だけです。</p>',
+    end_body_b2:
+      '<p>練習はこれで終わりです。</p>' +
+      '<p>このパートも{TOTAL}試行で、途中に短い休憩があります。ときどき、' +
+      '画像のない画面が表示され、特定の矢印キーを押すよう指示されます。</p>',
     end_hint: '<b>スペースキー</b>を押すと本番が始まります。',
   },
 
@@ -348,54 +462,6 @@ var TEXT_JA = {
                   'このページを閉じていただいて構いません。',
   },
 
-  // --- Grid blocks ------------------------------------------------------
-  // 下書き — 要確認（未レビュー）。question_episode はグループによって異なる。
-  grid: {
-    episode: {
-      title: '列を選ぶ課題',
-      instructions:
-        '<p>次の4つの画面では、3つの風景が1行に1つずつ表示されます。' +
-        'それぞれの風景は横に並んで何度か表示され、表示ごとに加工の度合いが' +
-        '異なります。それぞれの<b>列</b>が一つの加工の度合いを示しています。</p>' +
-        '<p>各画面の上に表示される質問に、列を選んでお答えください。' +
-        '列の中のどこをクリックしても選択できます。</p>' +
-        '<p>当てはまる列がない場合は、<b>「どれも当てはまらない」</b>を' +
-        '選んでください。</p>' +
-        '<p>「次へ」を押すまでは選択を変更できます。時間制限はありません。</p>',
-    },
-    normal: {
-      title: 'もう一度、列を選ぶ課題',
-      instructions:
-        '<p>次の4つの画面も同じ方法で進みますが、表示される風景は異なります。</p>' +
-        '<p>今回は、<b>ふだん</b>のあなたの周囲の風景の見え方に最も近い列を' +
-        '選んでください。</p>' +
-        '<p>列の中のどこをクリックしても選択できます。「次へ」を押すまでは' +
-        '選択を変更できます。時間制限はありません。</p>',
-    },
-    button_begin:    '開始',
-    question_episode: {
-      participant: 'そのエピソード中の周囲の風景の見え方に、最も近いのはどの列ですか？',
-      control:     '現実感喪失を体験している人にとっての周囲の風景の見え方に、最も近いと思うのはどの列ですか？',
-    },
-    question_normal: 'ふだんのあなたの周囲の風景の見え方に、最も近いのはどの列ですか？',
-    none:            'どれも当てはまらない',
-    button_continue: '次へ',
-    progress:        '{DONE} / {TOTAL} 画面',
-    // 「どれも当てはまらない」の後の質問（任意）。選択肢は画面上の位置を
-    // 指すもので、見え方の質は表さない。code は英語版と同一に保つこと。
-    none_followup: {
-      question: '「どれも当てはまらない」を選びました。最も近いのはどれですか？',
-      options: [
-        { code: 'beyond_left',  label: 'いちばん左の列よりも、さらに先' },
-        { code: 'beyond_right', label: 'いちばん右の列よりも、さらに先' },
-        { code: 'between',      label: '2つの列のあいだのどこか' },
-        { code: 'other_way',    label: 'これらの画像には表れていない違い' },
-        { code: 'cant_say',     label: 'わからない' },
-      ],
-      button: '次へ',
-    },
-  },
-
   // --- 現在の状態（最後の任意ブロック） -----------------------------------
   // >>> 仮の文言：項目2、13、19、29 の日本語版の正確な文言を label に
   // 貼り付けてください。id と順序は変えないこと。<<<
@@ -417,7 +483,7 @@ var TEXT_JA = {
   // --- Breaks -----------------------------------------------------------
   brk: {
     title: '休憩',
-    body: '<p>{TOTAL} 試行のうち {DONE} 試行が終わりました。</p>' +
+    body: '<p>このパートの {TOTAL} 試行のうち {DONE} 試行が終わりました。</p>' +
           '<p>必要であれば少し休んでください。全画面表示のままにしてください。</p>',
     hint: '準備ができたら<b>スペースキー</b>を押してください。',
   },
