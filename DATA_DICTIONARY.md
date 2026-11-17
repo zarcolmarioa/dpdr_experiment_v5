@@ -48,8 +48,9 @@ stamp in the middle (or `session_start_time`), not that. A pilot run
 (Pavlovia's **Pilot** button) is not stored on Pavlovia: the same file is
 downloaded to the computer that ran it.
 
-A full session produces **ROWS_TOTAL rows and about COLS_TOTAL columns** (one or two more
-rows if ID entry needed a retry). The columns differ slightly between the
+A full session produces **1253 rows** (1254 on Pavlovia, one or two more
+if ID entry needed a retry) and about **170 columns** (174 for participants,
+168 for controls). The columns differ slightly between the
 groups: the episode answers are `ep_derealization_*` and `ep_ordinary_*`
 for participants, `ep_ordinary_*` only for controls (§6).
 
@@ -127,14 +128,14 @@ of trials also carry `block_position` (1 or 2).
 | 5 | Participant details (ID + optional name and email) | `participant_id` | 1 | the ID, how it arrived, and **whether** a name / email was given (§5); on Pavlovia also `contact_name`, `contact_email` |
 | — | ID stamp, background download start | *(empty)* | 2 | — |
 | 6 | Brightness (+ viewing-conditions note) | `calibration_brightness` | 1 | `brightness_confirmed` (session-level) |
-| 7 | Gamma match | *(empty)* | 2 | `gamma_*` (session-level, §5) |
+| 7 | Gamma match | *(empty)* | 3 | `gamma_*` (session-level, §5) |
 | 8 | Episode selection | `episode` | 2 | one row per screen, with `episode`; the answers as `ep_*` columns on every row (§6) |
-| 9 | **Block 1** | `preload`, `block_start`, `reinstate`, `practice_intro`, `pairs`, `fixation`, `practice_feedback`, `blank`, `practice_end`, `catch_lockout`, `break`, `block_end` | ≈ 615 | **the data** (§7). 3 practice + 200 main `pairs` rows |
+| 9 | **Block 1** | `preload`, `block_start`, `reinstate`, `practice_intro`, `pairs`, `fixation`, `practice_feedback`, `blank`, `practice_end`, `catch_lockout`, `break`, `block_end` | 617 | **the data** (§7). 3 practice + 200 main `pairs` rows |
 | 10 | Rest | `rest` | 1 | `rest_ms`, `rest_extra_ms`; `rest_start`, `rest_end` session-level |
-| 11 | **Block 2** | as block 1 | ≈ 615 | as block 1 |
+| 11 | **Block 2** | as block 1 | 617 | as block 1 |
 | 12 | Word ratings | `word_instructions`, `word_ratings` | 1 + 1 | the ten ratings (§9); `rating_foggy`, `rating_faded` session-level |
 | 13 | State items | `state` | 1 | `state_q02` … `state_q29` (§10) |
-| 14 | Save | *(empty)* | 1 | end-of-session stamps (§5) |
+| 14 | Save | *(empty)* | 2 | end-of-session stamps (§5); the upload or download step |
 
 Within a block, in order:
 
