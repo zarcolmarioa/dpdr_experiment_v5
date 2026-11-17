@@ -126,14 +126,15 @@ var Loader = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // Slot, from ?slot=. Only a plain whole number of 1 or more is valid:
-  // '0', '-3', '2.5', '1e2', '+4', 'abc' and a missing slot are all null,
-  // and main.js refuses to start ("incomplete link").
+  // Slot, from ?slot=. Only a plain whole number of 1 or more, digits only,
+  // is valid: '0', '-3', '2.5', '1e2', 'abc', '', a slot with spaces
+  // (including '+4', which a query string reads as ' 4') and a missing slot
+  // are all null, and main.js refuses to start ("incomplete link").
+  // Leading zeros are allowed ('007' is slot 7).
   // -----------------------------------------------------------------------
   function slot() {
     var raw = _param('slot');
     if (raw === null) return null;
-    raw = raw.trim();
     if (!/^[0-9]+$/.test(raw)) return null;
     var n = parseInt(raw, 10);
     return (n >= 1 && n <= Number.MAX_SAFE_INTEGER) ? n : null;
