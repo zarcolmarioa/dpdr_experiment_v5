@@ -67,8 +67,12 @@ var WordsPhase = (function () {
     var W = words();
     return {
       type: jsPsychHtmlButtonResponse,
-      stimulus: '<div class="card word-intro"><h2>' + W.title + '</h2>' +
-                _fillWords(Loader.byGroup(W.instruction)) + '</div>',
+      // A function, so the participant's words (entered on the episode
+      // screens, after this node was built) are filled in when it shows.
+      stimulus: function () {
+        return '<div class="card word-intro"><h2>' + W.title + '</h2>' +
+               _fillWords(Loader.byGroup(W.instruction)) + '</div>';
+      },
       choices: [W.button_begin],
       data: { block: 'word_instructions' },
     };
