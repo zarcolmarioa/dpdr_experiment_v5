@@ -689,12 +689,12 @@ body.allow-scaling .stim-panel {
 }
 .calib-note p { margin: .4rem 0; }
 
-/* --- Anchoring: the questions about the episode (participants) ---------- */
+/* --- Episode screens: identifying words and recall questions ------------ */
 
 /* The card may be taller than a short window once the questions are on:
    it scrolls inside itself, because the centred layout would otherwise
    cut its top off with no way to scroll to it. */
-.anchoring-card {
+.episode-card {
   max-width: 720px;
   max-height: 94vh;
   overflow-y: auto;
@@ -702,10 +702,10 @@ body.allow-scaling .stim-panel {
   padding-top: 1.4rem;
   padding-bottom: 1.2rem;
 }
-.anchoring-card .btn-row { margin-top: .2rem; }
-.anchoring-card .btn-row .calib-btn { margin-top: .5rem; }
-.anchoring-card h2 { margin-bottom: .5rem; }
-.anchoring-card p { margin: .5rem 0; line-height: 1.5; }
+.episode-card .btn-row { margin-top: .2rem; }
+.episode-card .btn-row .calib-btn { margin-top: .5rem; }
+.episode-card h2 { margin-bottom: .5rem; }
+.episode-card p { margin: .5rem 0; line-height: 1.5; }
 
 .aq-intro { margin: .8rem 0 .2rem; font-size: .92rem; color: #333; }
 .aq-list  { text-align: left; }
@@ -787,6 +787,32 @@ body.allow-scaling .stim-panel {
 }
 .aq-scale-pt input { margin: 0 0 .1rem; accent-color: #4a6fa5; cursor: pointer; }
 .aq-anchor { font-size: .78rem; color: #777; }
+
+/* The identifying words: a wider field. */
+.aq-text-wide { width: 26rem; }
+.aq-text:disabled { background: #f2f2f2; }
+.aq-opt input[type="checkbox"] { margin: 0; accent-color: #4a6fa5; cursor: pointer; }
+.aq-opt:has(input[type="checkbox"]:checked) { border-color: #4a6fa5; background: #eef3fa; }
+.aq-incomplete { margin: .6rem 0 0; font-size: .85rem; }
+.calib-btn[disabled] { opacity: .45; }
+
+/* --- Reinstatement and rest ------------------------------------------- */
+.reinstate-card { max-width: 720px; }
+.reinstate-card .ep-words,
+.episode-card .ep-words {
+  display: inline-block;
+  margin: .2rem 0;
+  padding: .3rem .8rem;
+  border-left: 3px solid #4a6fa5;
+  background: #f3f6fb;
+  font-weight: 600;
+}
+.rest-clock {
+  font-size: 2.6rem;
+  font-variant-numeric: tabular-nums;
+  margin: .8rem 0 .2rem;
+  text-align: center;
+}
 
 /* --- Grid: follow-up after "None of these" -------------------------------- */
 
