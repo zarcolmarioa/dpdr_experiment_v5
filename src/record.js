@@ -3,51 +3,61 @@
  *
  * Two jobs:
  *   1. Stamp session-level properties onto every row (experiment, group,
- *      interview date, set code, display; then participant ID; then the
- *      target word ratings; then the closing stamps).
- *   2. Build the per-trial row for a stimulus pair.
+ *      slot and the assignment row, practice settings, interview date,
+ *      display; then participant ID; then episode answers (episodes.js),
+ *      block and rest times, catch failures per block, the target word
+ *      ratings; then the closing stamps).
+ *   2. Build the per-trial row for a stimulus pair or a catch trial.
  *
- * Grid rows are built in phases/grid.js, the consent, anchoring and state
- * rows in their own phase files.
+ * The consent, episode, rest and state rows are built in their own phase
+ * files.
  *
- * NAME COLLISION, IMPORTANT
- * -------------------------
+ * SESSION PROPERTIES OVERWRITE TRIAL FIELDS, IMPORTANT
+ * ----------------------------------------------------
+ * jsPsych writes each row as {plugin data, trial data, jsPsych's own
+ * columns, session properties}, later ones winning, and addProperties also
+ * writes onto every row already recorded. A session property therefore
+ * silently replaces a trial field of the same name. So the session never
+ * uses a trial field's name: the assignment is stamped as assign_* and
+ * b1_* / b2_*, never as `set`, `order`, `episode` or `block_position`,
+ * which are per-trial.
+ *
+ * NAME COLLISION: trial_type
+ * --------------------------
  * jsPsych writes its own column called `trial_type`, holding the PLUGIN
- * name ('html-keyboard-response', ...). trial_list.json ALSO has a column
- * called `trial_type`, holding the DESIGN label ('sat_only', 'conflict',
- * 'catch', ...).
- *
- * If both are written, one silently overwrites the other and a column is
- * lost with no error. So the design label is renamed to `pair_type` on
- * output. trial_list.json itself is never modified.
+ * name ('html-keyboard-response', ...), and it overwrites any `trial_type`
+ * we give. The list's design label (sat_only ... consistency, catch,
+ * practice) is therefore written as `list_trial_type`. The list's own
+ * `pair_type` (the type of the image pair, which differs from
+ * list_trial_type on consistency and catch rows) is written as `pair_type`.
+ * The lists themselves are never modified.
  *
  * KEY CASE, IMPORTANT
  * -------------------
  * jsPsych 7 returns key names LOWERCASED: 'arrowleft', not 'ArrowLeft'.
- * CONFIG.keys uses the standard KeyboardEvent spelling, so every comparison
- * between a recorded key and a configured key must be case-insensitive.
- * Comparing them directly leaves response_side null on EVERY trial, which
- * is silent because the raw `response` column still looks correct.
+ * Every comparison between a recorded key and a configured key is
+ * case-insensitive.
  * ========================================================================= */
 
 var Record = (function () {
 
   // -----------------------------------------------------------------------
-  // Session and task times.
+  // Session and task times. Times in the DATA are UTC (ISO 8601, ending in
+  // Z). The FILE NAMES use the session start in JAPAN TIME — see
+  // sessionStamp().
   //
   //   session  from the session-start stamp (just before the consent
   //            screen) to the save step.
-  //   task     from the onset of the first image trial (the first practice
-  //            trial, or the first pair trial if practice is off) to the
-  //            answer to the last pair trial.
-  //
-  // Times in the DATA are UTC (ISO 8601, ending in Z). The FILE NAMES use
-  // the session start in JAPAN TIME, so the response file and the contact
-  // file of one session carry the same stamp — see sessionStamp().
+  //   task     from the onset of the first image trial (practice included)
+  //            to the answer to the last trial of the last block.
   // -----------------------------------------------------------------------
   var _sessionStart = null;   // Date
   var _taskStart    = null;   // Date
   var _taskEnd      = null;   // Date
+
+  // Catch failures per block position: null until that block has started.
+  var _catchFail  = { 1: null, 2: null };
+  var _catchShown = { 1: null, 2: null };
 
   var JST_OFFSET_MS = 9 * 60 * 60 * 1000;   // Japan: UTC+9, no daylight saving
 
@@ -62,16 +72,11 @@ var Record = (function () {
 
   // The session start in Japan time, safe for file names:
   //   2026-10-30T14-12-40
-  // Computed from UTC + 9 h, so it is Japan time whatever time zone the
-  // participant's computer is set to.
   function sessionStamp() {
     var jst = new Date(_sessionStartDate().getTime() + JST_OFFSET_MS);
     return jst.toISOString().slice(0, 19).replace(/:/g, '-');
   }
 
-  // Called when an image trial (practice, pair or catch) is shown / answered.
-  // The first call to markTaskStart sets the start; every markTaskEnd moves
-  // the end, so the last one wins.
   function markTaskStart() { if (!_taskStart) _taskStart = new Date(); }
   function markTaskEnd()   { _taskEnd = new Date(); }
 
@@ -80,40 +85,32 @@ var Record = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // Session-level properties, added to every row by jsPsych.
-  //
-  // jsPsych's addProperties applies to rows already recorded as well as to
-  // future ones, so stamping these at the very start (before consent) puts
-  // them on every row of the file.
-  //
-  // `setCode` is the grid set swap (0 or 1), drawn once per session in
-  // main.js and used for the whole session — see grid.js.
+  // Session-level properties, stamped at the very start so they reach every
+  // row of the file.
   // -----------------------------------------------------------------------
-  function stampSessionStart(jsPsych, setCode) {
-    jsPsych.data.addProperties({
+  function stampSessionStart(jsPsych) {
+    var a = Loader.assignment() || { blocks: [] };
+    var props = {
       experiment_name:      CONFIG.experiment.name,
       experiment_version:   CONFIG.experiment.version,
-      // The platform actually used (CONFIG.platform 'auto' resolved), where
-      // name/email are kept, and where the libraries came from.
       platform:             Platform.name(),
       contact_storage:      Platform.contactStorage(),
       libraries:            Platform.libraries(),
       language:             Loader.language(),
 
-      // From the invitation link. group decides the wording of four
-      // screens; interview_date is '' when absent or invalid.
+      // From the invitation link.
       group:                Loader.group(),
+      slot:                 Loader.slot(),
       interview_date:       Loader.interviewDate(),
 
-      // Which stimulus set this session saw.
+      // The package, and this slot's row of assignment.json.
       stimulus_set:         Loader.stimulusSet(),
+      design_version:       (Loader.design() || {}).version || null,
+      assignment_row:       Loader.assignmentRowNumber(Loader.slot()),
+      assign_block_order:   (a.block_order === undefined) ? null : a.block_order,
+      assign_set_mapping:   (a.set_mapping === undefined) ? null : a.set_mapping,
+      assign_order:         (a.order === undefined) ? null : a.order,
 
-      // Grid set swap: 0 = episode block shows set A, normal block set B;
-      // 1 = the reverse. Binomial, not exact — see interface_spec.md.
-      set_code:             setCode,
-
-      // UTC. The same moment, in Japan time, is the stamp in both file
-      // names (sessionStamp).
       session_start_time:   sessionStartISO(),
 
       // Display context, measured before full screen. The full-screen
@@ -124,7 +121,27 @@ var Record = (function () {
       viewport_height:      window.innerHeight,
       device_pixel_ratio:   window.devicePixelRatio,
       user_agent:           navigator.userAgent,
+    };
+    // Per block position: the episode, set, list and practice file the
+    // assignment row names, and the practice settings actually used
+    // (config.js: practice, which overrides design.json).
+    [1, 2].forEach(function (p) {
+      var blk = null;
+      a.blocks.forEach(function (x) { if (x.position === p) blk = x; });
+      props['b' + p + '_episode']  = blk ? blk.episode  : null;
+      props['b' + p + '_set']      = blk ? blk.set      : null;
+      props['b' + p + '_list']     = blk ? blk.list     : null;
+      props['b' + p + '_practice'] = blk ? blk.practice : null;
+      props['practice_trials_b' + p]   = Loader.practiceCount(p);
+      props['practice_feedback_b' + p] = Loader.practiceFeedback(p);
+      props['block' + p + '_start'] = null;
+      props['block' + p + '_end']   = null;
+      props['catch_fail_b' + p]     = null;
     });
+    props.rest_start = null;
+    props.rest_end   = null;
+    props.catch_fail_total = null;
+    jsPsych.data.addProperties(props);
   }
 
   // Who is running the session, once the ID screen has accepted an ID.
@@ -136,9 +153,60 @@ var Record = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // Closing stamps, at the save step: session end and both durations, on
-  // every row. The durations are whole seconds; task_* are empty if no
-  // image trial ran (e.g. a dev session without trials).
+  // Block and rest times, and catch failures per block.
+  //
+  //   block<p>_start  when the block began: after its preload gate, before
+  //                   its reinstatement screen
+  //   block<p>_end    after the answer to its last main trial
+  //   catch_fail_b<p> catch trials of that block answered with a key other
+  //                   than the target (0-5); null if the block did not run
+  //   rest_start / rest_end   the rest screen appearing / Continue pressed
+  // -----------------------------------------------------------------------
+  function markBlockStart(jsPsych, b) {
+    _catchFail[b.position]  = 0;
+    _catchShown[b.position] = 0;
+    var props = {};
+    props['block' + b.position + '_start'] = new Date().toISOString();
+    props['catch_fail_b' + b.position] = 0;
+    jsPsych.data.addProperties(props);
+    if (CONFIG.debug) {
+      console.log('[Record] block ' + b.position + ' (' + b.episode + ', list ' +
+                  b.list + ', practice ' + b.practiceFile + ' x' +
+                  b.practice.length + (b.feedback ? ' with feedback' : '') +
+                  ', ' + b.rows.length + ' main trials) started.');
+    }
+  }
+
+  function markBlockEnd(jsPsych, b) {
+    var props = {};
+    props['block' + b.position + '_end'] = new Date().toISOString();
+    props['catch_fail_b' + b.position] = _catchFail[b.position];
+    props.catch_fail_total = _catchTotal();
+    jsPsych.data.addProperties(props);
+    if (CONFIG.debug) {
+      console.log('[Record] block ' + b.position + ' ended: ' +
+                  _catchFail[b.position] + ' catch failure(s) of ' +
+                  _catchShown[b.position] + '.');
+    }
+  }
+
+  function markRest(jsPsych, which, when) {
+    var props = {};
+    props['rest_' + which] = when.toISOString();
+    jsPsych.data.addProperties(props);
+  }
+
+  // Sum over the blocks that ran; null if none did.
+  function _catchTotal() {
+    var t = null;
+    [1, 2].forEach(function (p) {
+      if (_catchFail[p] !== null) t = (t || 0) + _catchFail[p];
+    });
+    return t;
+  }
+
+  // -----------------------------------------------------------------------
+  // Closing stamps, at the save step.
   // -----------------------------------------------------------------------
   function stampSessionEnd(jsPsych, extra) {
     var end = new Date();
@@ -148,6 +216,9 @@ var Record = (function () {
       task_start_time:    _taskStart ? _taskStart.toISOString() : null,
       task_end_time:      _taskEnd   ? _taskEnd.toISOString()   : null,
       task_duration_s:    _seconds(_taskStart, _taskEnd),
+      catch_fail_b1:      _catchFail[1],
+      catch_fail_b2:      _catchFail[2],
+      catch_fail_total:   _catchTotal(),
     };
     if (extra) {
       for (var k in extra) {
@@ -158,20 +229,8 @@ var Record = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // Promote the two TARGET word ratings to session-level columns, so they
-  // appear on every trial row: rating_foggy and rating_faded.
-  //
-  // The two targets are `foggy` and `faded`. Having them on every row means
-  // a between-participant step needs no join, and removes the chance of
-  // joining a participant to the wrong ratings.
-  //
-  // Only the targets are promoted. The other eight words stay on the
-  // word_ratings row (word_<id>).
-  //
-  // The ratings are taken AFTER the pair trials and the episode grid, but
-  // jsPsych's addProperties also writes them onto the rows already
-  // recorded, so they still end up on every row of the file, including
-  // every pair-trial row.
+  // The two TARGET word ratings as session columns: rating_foggy and
+  // rating_faded, on every row.
   // -----------------------------------------------------------------------
   function stampWordRatings(jsPsych, ratings) {
     jsPsych.data.addProperties({
@@ -181,11 +240,7 @@ var Record = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // Map a recorded key onto a side.
-  //
-  // BOTH sides of the comparison are lowercased, so this keeps working
-  // whichever spelling jsPsych returns and whichever spelling is written
-  // in CONFIG.keys. See the KEY CASE note in the header.
+  // Map a recorded key onto a side. Both sides lowercased.
   // -----------------------------------------------------------------------
   function keyToSide(key) {
     if (key === null || key === undefined) return null;
@@ -196,31 +251,43 @@ var Record = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // Per-trial data for a stimulus pair.
+  // Per-trial data for one row of a list or practice file. `ctx` is
+  // { position, episode, phase ('practice' | 'main') }. slot, group and
+  // assignment_row are session properties, so they are on this row too.
   //
-  // `row` is one entry from trial_list.json. The returned object is attached
-  // to the jsPsych trial via its `data` parameter, so these become columns.
-  //
-  // Note what is NOT computed here: whether the participant "chose A".
-  // Only the raw side is stored. Mapping side -> A/B via a_is_left happens
-  // in the analysis script, where it can be checked.
+  // Everything from the list row is copied unchanged; item_id is what joins
+  // a response to items.csv.
   // -----------------------------------------------------------------------
-  //
-  // pred_sat and pred_fog are the registered model's predictors (corpus-SD
-  // units, positive = image A is the predicted choice); d_* and z_* are
-  // kept for reference. All are copied unchanged from the frozen list.
-  // -----------------------------------------------------------------------
-  function pairTrialData(row) {
+  function pairTrialData(row, ctx) {
+    var isCatch = (row.trial_type === 'catch');
     return {
       block:             'pairs',
-      trial_index_list:  row.trial,          // index within trial_list.json
-      pair_type:         row.trial_type,     // renamed — see header
+      phase:             ctx.phase,            // practice | main
+      block_position:    ctx.position,         // 1 | 2
+      episode:           ctx.episode,          // derealization | ordinary | expectation
+      block_trial:       row.trial,            // trial number within the block (list's `trial`)
+      list_trial_type:   row.trial_type,       // the list's trial_type — see header
+      pair_type:         row.pair_type,
       analysed:          row.analysed,
+      item_id:           row.item_id,
+      list_id:           row.list_id,
+      set:               row.set,
+      order:             row.order,
+      repeat_of:         row.repeat_of,        // consistency rows: block-local trial number
+      repeat_of_item:    row.repeat_of_item,   // consistency rows: the original's item_id
+      is_catch:          isCatch,
+      catch_mode:        row.catch_mode,
+      catch_target:      null,                 // set on catch rows
+      catch_correct:     null,                 // set on catch rows
+      images_shown:      !(isCatch && row.catch_mode === 'no_images'),
       scene_id:          row.scene_id,
       category:          row.category,
+      a_is_left:         row.a_is_left,
       left_path:         row.left_path,
       right_path:        row.right_path,
-      a_is_left:         row.a_is_left,
+      file_a:            row.file_a,
+      file_b:            row.file_b,
+      couple:            row.couple,
       pred_sat:          row.pred_sat,
       pred_fog:          row.pred_fog,
       d_sat:             row.d_sat,
@@ -228,68 +295,60 @@ var Record = (function () {
       z_sat:             row.z_sat,
       z_fog:             row.z_fog,
       mag_bin:           row.mag_bin,
-      catch_mode:        row.catch_mode,         // catch trials only
-      repeat_of:         row.repeat_of,          // consistency trials only
+      N_corpus:          row.N_corpus,
+      N_orig:            row.N_orig,
+      includes_original: row.includes_original,
       display_px:        CONFIG.display.image_px,
     };
   }
 
   // -----------------------------------------------------------------------
-  // Runs after a pair trial finishes. Converts the pressed key into a side,
-  // and scores catch trials.
-  //
-  // There is no response timeout in this experiment, so `no_response` should
-  // never be true. It is recorded anyway: if it ever appears, key handling
-  // has gone wrong and those rows need inspecting rather than silently
-  // entering the analysis as missing data.
+  // After an image trial: the side, and the chosen IMAGE (A or B) from the
+  // side and a_is_left. rt is jsPsych's, in milliseconds from the onset of
+  // the pair. There is no time limit, so no_response should never be true;
+  // it is recorded so that a key-handling fault would show.
   // -----------------------------------------------------------------------
   function finishPairTrial(data) {
     data.response_key  = data.response;             // raw, as jsPsych gave it
     data.response_side = keyToSide(data.response);
     data.no_response   = (data.response_side === null);
+    if (data.response_side === null || typeof data.a_is_left !== 'boolean') {
+      data.chosen = null;
+    } else {
+      var leftIsA = data.a_is_left;
+      data.chosen = ((data.response_side === 'left') === leftIsA) ? 'A' : 'B';
+    }
   }
 
   // -----------------------------------------------------------------------
-  // Runs after a catch trial. Scores the single keypress against the target.
-  //
-  // The trial list carries no expected response: the target comes from
-  // CONFIG.catch_trials.sequence, one per catch row, in order (catch_mode
-  // 'no_images'). The catch key is an attention probe, not a design
-  // factor — it enters no analysis.
-  //
-  // Both the target and the response are recorded. HOW someone failed is
-  // informative: a left or right press means the trained side-choosing
-  // response fired without reading, while a scattered key means general
-  // disengagement.
+  // After a catch trial: the single keypress scored against the target
+  // (design.json, by block position). No image is chosen: chosen is null.
+  // rt is from the end of the lockout. A left or right press
+  // (catch_pressed_side) means the trained side-choosing response fired
+  // without reading.
   // -----------------------------------------------------------------------
   function finishCatchTrial(data) {
     var pressed = (data.response === null || data.response === undefined)
       ? null : String(data.response).toLowerCase();
-    var target  = String(data.catch_key).toLowerCase();
+    var target  = String(data.catch_target).toLowerCase();
 
-    data.response_key = data.response;
-    data.catch_pass   = (pressed === target);
-    data.no_response  = (pressed === null);
+    data.response_key       = data.response;
+    data.response_side      = keyToSide(data.response);
+    data.chosen             = null;
+    data.catch_correct      = (pressed === target);
+    data.no_response        = (pressed === null);
+    data.catch_pressed_side = (data.response_side !== null);
 
-    // Did the participant press a response key instead of reading?
-    data.catch_pressed_side = (keyToSide(data.response) !== null);
+    var p = data.block_position;
+    if (_catchFail[p] === null) { _catchFail[p] = 0; _catchShown[p] = 0; }
+    _catchShown[p] += 1;
+    if (!data.catch_correct) _catchFail[p] += 1;
   }
 
   // -----------------------------------------------------------------------
   // Filename for the uploaded file:
   //     <participant_id>_<stimulus_set>_<session start, Japan time>.csv
-  //     e.g. R_9rJJWk01c767jE8_v4_2026-10-30T14-12-40.csv
-  //
-  // The stamp is the SESSION START (not the upload time), so it is the same
-  // in the contact file's name (contact_<participant_id>_<stamp>.csv) and
-  // in the download offered if the upload fails.
-  //
-  // The set appears in the name as well as in the data. That redundancy is
-  // deliberate: the OSF component can be sorted by arm without opening
-  // anything, and if a file is ever truncated or fails to parse, the one
-  // piece of metadata that could not be recovered is still readable.
-  //
-  // Colons and dots are stripped so the name is safe on every filesystem.
+  //     e.g. R_9rJJWk01c767jE8_v5b_180_2026-11-30T14-12-40.csv
   // -----------------------------------------------------------------------
   function sessionFilename(participantId) {
     var set = Loader.stimulusSet();
@@ -305,6 +364,9 @@ var Record = (function () {
     pairTrialData:     pairTrialData,
     finishPairTrial:   finishPairTrial,
     finishCatchTrial:  finishCatchTrial,
+    markBlockStart:    markBlockStart,
+    markBlockEnd:      markBlockEnd,
+    markRest:          markRest,
     sessionFilename:   sessionFilename,
     sessionStamp:      sessionStamp,
     sessionStartISO:   sessionStartISO,
