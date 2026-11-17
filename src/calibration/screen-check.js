@@ -13,8 +13,9 @@
  *      512 px panels need.
  *
  *   2. Window check — a HARD STOP. The real trial layout is drawn
- *      invisibly for a moment: the question in the participant's language
- *      and group (both from the link), above two panels at exactly
+ *      invisibly for a moment: the question in the participant's language,
+ *      for each of the two episodes of the group (all from the link), above
+ *      two panels at exactly
  *      display.image_px. Every part of it is measured against the window.
  *      The practice-feedback line, which replaces the question on the
  *      first practice trial, is measured too. If anything would be cut
@@ -132,9 +133,8 @@ var ScreenCheck = (function () {
       nodes.push({
         type: jsPsychHtmlKeyboardResponse,
         stimulus: function () {
-          var T = Loader.text();
           return '<div class="fit-probe" aria-hidden="true">' +
-                 PairsPhase.trialHTML(Loader.byGroup(T.prompt.main), null, null) +
+                 PairsPhase.trialHTML('', null, null) +
                  '</div>';
         },
         choices: 'NO_KEYS',
@@ -143,12 +143,18 @@ var ScreenCheck = (function () {
         on_load: function () {
           var probe  = document.querySelector('.fit-probe');
           var prompt = probe ? probe.querySelector('.stim-prompt') : null;
-          var fits   = !!probe && _layoutFits(probe);
+          var fits   = !!probe && !!prompt;
 
-          // The first practice trial shows a feedback line in place of the
-          // question; it must fit too.
-          if (fits && prompt) {
-            prompt.innerHTML = Loader.text().practice.feedback_first;
+          // Every line that can stand above the pictures in this session
+          // must fit: the question of each of the group's two episodes, and
+          // the feedback line shown after the first practice trial. The
+          // longest one decides.
+          var lines = Loader.episodes().map(function (ep) {
+            return PairsPhase.prompt(ep);
+          });
+          lines.push(Loader.text().practice.feedback_first);
+          for (var i = 0; fits && i < lines.length; i++) {
+            prompt.innerHTML = lines[i];
             fits = _layoutFits(probe);
           }
           _fits = fits;

@@ -1,37 +1,38 @@
 /* =========================================================================
- * pairs.js — the image-pair trials, driven entirely by trial_list.json.
+ * pairs.js — one block of image-pair trials, driven entirely by the
+ * package: the block's list (lists/<list>.json) and practice file.
  *
- * Structure:
- *   preload gate  -> waits for the 334 images (usually instant, since
+ * A block (main.js builds one per block position, 1 and 2):
+ *   preload gate  -> waits for the block's images (usually instant, since
  *                    downloading started in the background earlier)
- *   practice intro
- *   6 practice trials          (trial_type 'practice', analysed false)
+ *   block start   -> block<p>_start is stamped
+ *   reinstatement -> names the block's episode (phases/episodes.js)
+ *   practice intro (block 2: says the question has changed, shows it)
+ *   3 practice trials, each followed by feedback (config.js: practice)
  *   practice end
- *   205 main trials            (everything else, in file order: 60 sat_only,
- *                               60 fog_only, 30 together, 30 conflict,
- *                               15 consistency, 10 catch)
- *     with a break every CONFIG.timing.break_every (41) trials, so 4 breaks
- *     split the block into 5 equal parts
+ *   200 main trials, in the list's order: 180 analysed, 15 consistency
+ *     repeats, 5 catch, with a break after trials 40, 80, 120 and 160
+ *     (design.json: timing.breaks_after_trial), "n of 200"
+ *   block end     -> block<p>_end and catch_fail_b<p> are stamped
  *
- * Trial order, pairing, left/right assignment and the predictor values all
- * come from the frozen v4 trial list. Nothing is randomised, reordered or
- * resampled here: the design is preregistered.
+ * Trial order, pairing, left/right assignment (left_path, right_path,
+ * a_is_left) and the predictor values all come from the frozen list.
+ * Nothing is randomised, reordered or resampled here.
  *
- * The prompt above the images is the only thing here that depends on the
- * group (participant / control), and it comes from the text files.
+ * The question above the images depends on the block's EPISODE
+ * (text: prompt.main.<episode>).
  *
  * Each image trial is three nodes: fixation, the pair, a blank. Only the
- * pair is recorded as block 'pairs'.
+ * pair is recorded as block 'pairs'. Trials are self-paced: no time limit,
+ * no minimum response time.
  *
- * Two trial types are built differently:
+ * CATCH trials show no images (catch_mode 'no_images') — see _catchNodes().
+ * Their targets come from design.json (catch.targets_by_block_position),
+ * the k-th catch row of a block getting the block's k-th target, so the
+ * targets restart at the first one in each block.
  *
- *   CATCH trials show no images at all — see _catchNodes(). This is what
- *   makes the check work; with pictures on screen the trained "pick a side"
- *   response fires before anything is read.
- *
- *   The first few PRACTICE trials are followed by a feedback screen that
- *   outlines the chosen image. It confirms the key mapping visually and
- *   says nothing about why the choice was made.
+ * PRACTICE feedback outlines the chosen image. It confirms the key mapping
+ * visually and says nothing about why the choice was made.
  * ========================================================================= */
 
 var PairsPhase = (function () {
@@ -41,12 +42,10 @@ var PairsPhase = (function () {
   var _lastPanel = null;
 
   // -----------------------------------------------------------------------
-  // The prompt for an image trial: the active group's version of
-  // prompt.main. Catch trials have their own screen (below). The v4 trial
-  // list has no `instruction` column; the wording lives in text/.
+  // The question above the images, for an episode.
   // -----------------------------------------------------------------------
-  function _prompt() {
-    return Loader.byGroup(Loader.text().prompt.main);
+  function prompt(episode) {
+    return Loader.byEpisode(Loader.text().prompt.main, episode);
   }
 
   // The markup of an image trial, also used by screen-check.js to measure
@@ -63,31 +62,21 @@ var PairsPhase = (function () {
   //
   // No images. Large text directly on the background — no card — so the
   // screen resembles neither a trial nor a break. The target is UP or DOWN,
-  // taken from CONFIG.catch_trials.sequence in order, so a reflexive
-  // left/right press fails immediately.
+  // so a reflexive left/right press fails immediately.
   //
   // Built as TWO nodes so the lockout needs no custom key handling:
   //   1. the same screen with choices 'NO_KEYS' and a fixed duration, so
   //      any press carried over from the previous trial is discarded;
   //   2. the live screen with choices 'ALL_KEYS', so a WRONG key actually
-  //      registers and fails. With a restricted choices list jsPsych would
-  //      ignore the wrong key and wait, and the trial could only ever end
-  //      in success.
+  //      registers and fails.
   //
   // No trial_duration on the live node: unlimited time, one press.
   // -----------------------------------------------------------------------
-  var _catchIndex = 0;
-
-  function _catchKeyFor(index) {
-    var seq = CONFIG.catch_trials.sequence;
-    return seq[index % seq.length];
-  }
-
   function _catchHTML(targetKey) {
     var T = Loader.text();
     var isUp = (String(targetKey).toLowerCase() === 'arrowup');
     var name  = isUp ? T.catch.key_up : T.catch.key_down;
-    var arrow = isUp ? '\u2191' : '\u2193';
+    var arrow = isUp ? '↑' : '↓';
     return (
       '<div class="catch-screen">' +
       '<div class="catch-lead">' + T.catch.lead + '</div>' +
@@ -99,11 +88,10 @@ var PairsPhase = (function () {
     );
   }
 
-  function _catchNodes(row) {
-    var targetKey = _catchKeyFor(_catchIndex++);
-    var html      = _catchHTML(targetKey);
-    var base      = Record.pairTrialData(row);
-    base.catch_key = targetKey;
+  function _catchNodes(row, ctx, targetKey) {
+    var html = _catchHTML(targetKey);
+    var base = Record.pairTrialData(row, ctx);
+    base.catch_target = targetKey;
 
     return [
       // 1. Lockout — identical screen, keys inert.
@@ -112,7 +100,7 @@ var PairsPhase = (function () {
         stimulus: html,
         choices: 'NO_KEYS',
         trial_duration: CONFIG.catch_trials.lockout_ms,
-        data: { block: 'catch_lockout' },
+        data: { block: 'catch_lockout', block_position: ctx.position },
       },
       // 2. Live — any key ends the trial and is scored.
       {
@@ -130,8 +118,7 @@ var PairsPhase = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // One image panel. Size is fixed at CONFIG.display.image_px for every
-  // participant — see the note in experiment.css.
+  // One image panel, fixed at CONFIG.display.image_px.
   // -----------------------------------------------------------------------
   function _panel(relativePath, chosen) {
     return (
@@ -145,32 +132,31 @@ var PairsPhase = (function () {
   }
 
   // -----------------------------------------------------------------------
-  // The three nodes making up one trial.
+  // The nodes making up one trial. `feedback` = outline the chosen image
+  // afterwards (practice); `firstFeedback` = also show the one-line
+  // explanation (first practice trial of the block).
   // -----------------------------------------------------------------------
-  function _trialNodes(row, feedbackIndex) {
+  function _trialNodes(row, ctx, feedback, firstFeedback) {
     var nodes = [];
-
-    // Catch trials have no fixation and no images.
-    if (row.trial_type === 'catch') {
-      return _catchNodes(row);
-    }
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
       stimulus: '<div class="fixation">+</div>',
       choices: 'NO_KEYS',
       trial_duration: CONFIG.timing.fixation_ms,
-      data: { block: 'fixation' },
+      data: { block: 'fixation', block_position: ctx.position },
     });
+
+    var data = Record.pairTrialData(row, ctx);
+    data.practice_feedback = !!feedback;
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
-      stimulus: trialHTML(_prompt(), row.left_path, row.right_path),
+      stimulus: trialHTML(prompt(ctx.episode), row.left_path, row.right_path),
       choices: [CONFIG.keys.left, CONFIG.keys.right],
       // No trial_duration: responses are self-paced, with no timeout.
-      data: Record.pairTrialData(row),
+      data: data,
       on_load: function () {
-        // Task start = onset of the first image trial (task_start_time).
         Record.markTaskStart();
         var el = document.querySelector('.stim-panel');
         if (el) {
@@ -178,28 +164,21 @@ var PairsPhase = (function () {
           _lastPanel = Math.round(r.width) + 'x' + Math.round(r.height);
         }
       },
-      on_finish: function (data) {
-        data.panel_rendered_px = _lastPanel;
-        Record.finishPairTrial(data);
-        // Task end = answer to the last pair trial (the last call wins).
+      on_finish: function (d) {
+        d.panel_rendered_px = _lastPanel;
+        Record.finishPairTrial(d);
         Record.markTaskEnd();
       },
     });
 
-    // Practice feedback: outline the chosen image. Shown on the first N
-    // practice trials only, so the later practice trials match the main
-    // block exactly.
-    if (feedbackIndex !== undefined &&
-        feedbackIndex < CONFIG.timing.practice_feedback_trials) {
-      nodes.push(_feedbackNode(row, feedbackIndex === 0));
-    }
+    if (feedback) nodes.push(_feedbackNode(row, ctx, firstFeedback));
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
       stimulus: '',
       choices: 'NO_KEYS',
       trial_duration: CONFIG.timing.blank_ms,
-      data: { block: 'blank' },
+      data: { block: 'blank', block_position: ctx.position },
     });
 
     return nodes;
@@ -207,21 +186,14 @@ var PairsPhase = (function () {
 
   // -----------------------------------------------------------------------
   // Practice feedback. Re-renders the same pair with the chosen image
-  // outlined, for a fixed duration.
-  //
-  // It says nothing about WHY the participant chose what they chose.
-  // Confirming a reason ("because you remember it looking that way") would
-  // endorse the choice as meaningful and invite consistency-seeking on
-  // later trials, and would supply an interpretation the participant may
-  // not have had. The outline teaches the key mapping and nothing else.
-  //
-  // Being visual, it also needs no translation.
+  // outlined, for a fixed duration. It says nothing about WHY the choice
+  // was made: the outline teaches the key mapping and nothing else.
   // -----------------------------------------------------------------------
-  function _feedbackNode(row, isFirst) {
-    var T = Loader.text();
+  function _feedbackNode(row, ctx, isFirst) {
     return {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: function () {
+        var T = Loader.text();
         var last = jsPsych.data.get().filter({ block: 'pairs' }).last(1).values()[0];
         var side = last ? last.response_side : null;
         return (
@@ -236,123 +208,143 @@ var PairsPhase = (function () {
       },
       choices: 'NO_KEYS',
       trial_duration: CONFIG.timing.practice_feedback_ms,
-      data: { block: 'practice_feedback' },
+      data: { block: 'practice_feedback', block_position: ctx.position },
     };
   }
 
   // -----------------------------------------------------------------------
   // A text screen advanced with SPACE.
   // -----------------------------------------------------------------------
-  function _screen(title, body, hint, blockName) {
+  function _screen(title, body, hint, blockName, position) {
     return {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: '<div class="card"><h2>' + title + '</h2>' + body +
                 '<p class="hint">' + hint + '</p></div>',
       choices: [' '],
-      data: { block: blockName },
+      data: { block: blockName, block_position: position },
     };
   }
 
   // -----------------------------------------------------------------------
-  // The preload gate.
-  //
-  // Downloading started in the background earlier (see main.js), so by the
-  // time this runs the files are usually cached and it flashes past. If the
-  // connection is slow the participant waits here — but by then they have
-  // already invested several minutes and are far more likely to stay than
-  // they would have been at a progress bar on the very first screen.
+  // The preload gate: waits for whatever of the block's images has not
+  // arrived yet (the background download started after the ID screen).
   // -----------------------------------------------------------------------
-  function _preloadGate(images) {
+  function _preloadGate(images, position) {
     var T = Loader.text();
     return {
       type: jsPsychPreload,
-      images: images || Loader.preloadURLs(),
+      images: images,
       message: T.preload.message,
       show_progress_bar: true,
       continue_after_error: false,
       error_message: T.preload.error,
       max_load_time: 300000,          // 5 minutes
-      data: { block: 'preload' },
+      data: { block: 'preload', block_position: position },
       on_error: function (file) {
         console.error('[Preload] Failed to load: ' + file);
       },
       on_finish: function (data) {
         if (CONFIG.debug) {
-          console.log('[Preload] success: ' + data.success +
+          console.log('[Preload] block ' + position + ': success ' + data.success +
                       ' | failed files: ' + (data.failed_images || []).length);
         }
       },
     };
   }
 
+  // Replace {N} and {TOTAL}-style tokens.
+  function _fill(s, map) {
+    for (var k in map) {
+      if (Object.prototype.hasOwnProperty.call(map, k)) {
+        s = s.split('{' + k + '}').join(String(map[k]));
+      }
+    }
+    return s;
+  }
+
   // -----------------------------------------------------------------------
-  // Build the whole phase.
+  // Build one block. `b` is Loader.block(position); `introNodes` are the
+  // reinstatement screen's nodes (phases/episodes.js), shown after the
+  // block starts and before the practice.
   // -----------------------------------------------------------------------
-  function buildNodes(jsPsych) {
-    var T        = Loader.text();
-    var all      = Loader.trials();
-    var practice = all.filter(function (t) { return t.trial_type === 'practice'; });
-    var main     = all.filter(function (t) { return t.trial_type !== 'practice'; });
-    var nodes    = [];
+  function buildBlockNodes(jsPsych, b, introNodes) {
+    var T     = Loader.text();
+    var nodes = [];
+    var ctx   = {
+      position:      b.position,
+      episode:       b.episode,
+      slot:          Loader.slot(),
+      assignmentRow: Loader.assignmentRowNumber(Loader.slot()),
+    };
+    var practice = CONFIG.blocks.practice ? b.practice : [];
+    var main     = CONFIG.blocks.main     ? b.rows     : [];
 
-    // Testing limits. Truncation drops catch and consistency trials, so a
-    // limited session is never valid data — main.js stamps is_dev on it.
-    var lim = CONFIG.limits || {};
-    if (lim.max_practice > 0) practice = practice.slice(0, lim.max_practice);
-    if (lim.max_trials   > 0) main     = main.slice(0, lim.max_trials);
+    // Preload gate: only the images this block will actually show.
+    var shown = { practice: practice, rows: main };
+    var images = Loader.blockImageURLs(shown);
+    if (images.length) nodes.push(_preloadGate(images, b.position));
 
-    // Preload only the images this session will actually show — which
-    // depends on BOTH the block flags and the trial limits. On a full
-    // session that is all 334; on a truncated test it is a handful, so the
-    // upload can be checked without waiting for ~100 MB.
-    var willShow = [];
-    if (CONFIG.blocks.practice) willShow = willShow.concat(practice);
-    if (CONFIG.blocks.main)     willShow = willShow.concat(main);
-
-    var needed = {};
-    willShow.forEach(function (t) {
-      if (t.trial_type === 'catch') return;      // catch trials show no images
-      needed[Loader.imageURL(t.left_path)]  = true;
-      needed[Loader.imageURL(t.right_path)] = true;
+    nodes.push({
+      type: jsPsychCallFunction,
+      func: function () { Record.markBlockStart(jsPsych, b); },
+      data: { block: 'block_start', block_position: b.position, episode: b.episode },
     });
 
-    // No images to wait for means no gate: skip it entirely rather than
-    // showing a progress bar that completes instantly.
-    var images = Object.keys(needed);
-    if (images.length) nodes.push(_preloadGate(images));
+    nodes = nodes.concat(introNodes || []);
 
     // --- Practice --------------------------------------------------------
-    if (CONFIG.blocks.practice && practice.length) {
-      nodes.push(_screen(T.practice.title, T.practice.body,
-                         T.practice.continue_hint, 'practice_intro'));
+    if (practice.length) {
+      var P = T.practice;
+      var vars = { N: practice.length, QUESTION: prompt(b.episode),
+                   TOTAL: b.rows.length };
+      var intro = (b.position === 1)
+        ? _fill(P.body, vars)
+        : _fill(P.body_b2, vars) + _fill(P.question_changed, vars);
+      nodes.push(_screen(P.title, intro, P.continue_hint,
+                         'practice_intro', b.position));
+      var pctx = Object.assign({ phase: 'practice' }, ctx);
       practice.forEach(function (row, i) {
-        nodes = nodes.concat(_trialNodes(row, i));
+        nodes = nodes.concat(_trialNodes(row, pctx, b.feedback, b.feedback && i === 0));
       });
-      nodes.push(_screen(T.practice.end_title, T.practice.end_body,
-                         T.practice.end_hint, 'practice_end'));
+      nodes.push(_screen(P.end_title,
+                         _fill(b.position === 1 ? P.end_body : P.end_body_b2, vars),
+                         P.end_hint, 'practice_end', b.position));
     }
 
-    // --- Main block ------------------------------------------------------
-    if (CONFIG.blocks.main) {
-      var every = CONFIG.timing.break_every;
+    // --- Main trials -----------------------------------------------------
+    if (main.length) {
+      var breaks = Loader.breaksAfter();
+      var mctx   = Object.assign({ phase: 'main' }, ctx);
+      var k      = 0;     // catch counter, restarting in every block
       main.forEach(function (row, i) {
-        // Break before this trial, but never immediately after the practice
-        // end screen and never as the final screen of the block.
-        if (every > 0 && i > 0 && i % every === 0) {
+        // Break after `i` completed trials, if i is a break point — never
+        // before the first trial or after the last one.
+        if (i > 0 && breaks.indexOf(i) !== -1) {
           nodes.push(_screen(
             T.brk.title,
-            T.brk.body.replace('{DONE}', String(i))
-                      .replace('{TOTAL}', String(main.length)),
-            T.brk.hint,
-            'break'
-          ));
+            _fill(T.brk.body, { DONE: i, TOTAL: main.length }),
+            T.brk.hint, 'break', b.position));
         }
-        nodes = nodes.concat(_trialNodes(row));
+        if (row.trial_type === 'catch') {
+          nodes = nodes.concat(_catchNodes(row, mctx, b.targets[k++]));
+        } else {
+          nodes = nodes.concat(_trialNodes(row, mctx, false, false));
+        }
       });
     }
+
+    nodes.push({
+      type: jsPsychCallFunction,
+      func: function () { Record.markBlockEnd(jsPsych, b); },
+      data: { block: 'block_end', block_position: b.position, episode: b.episode },
+    });
 
     return nodes;
   }
 
-  return { buildNodes: buildNodes, trialHTML: trialHTML };
+  return {
+    buildBlockNodes: buildBlockNodes,
+    trialHTML:       trialHTML,
+    prompt:          prompt,
+  };
 })();
