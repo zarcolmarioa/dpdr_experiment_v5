@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- =======================================================================
+     dev.html — developer entry point. NOT for participants.
+
+     Identical to index.html except that it sets window.DEV_MODE and loads
+     src/dev-menu.js. main.js sees the flag and shows the block jumper
+     instead of starting the session, so any single block can be reached in
+     seconds rather than by sitting through the whole study.
+
+     Every session started here is stamped is_dev = true on every row.
+
+     Participants use index.html, which does not load the menu.
+     ======================================================================= -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DEV — Visual Experience Study</title>
+
+  <!-- ===================================================================
+       Every script below is loaded EXACTLY ONCE. If you add a script,
+       check it is not already present: a duplicated src/main.js runs the
+       entry point twice, which is hard to diagnose from the symptoms.
+       =================================================================== -->
+
+  <!-- Configuration first: platform.js reads it. ---------------------- -->
+  <script src="config.js"></script>
+
+  <!-- jsPsych 7.1.2 + plugins, and the DataPipe or Pavlovia plugin. ---
+       platform.js writes these tags itself, choosing by CONFIG.platform
+       (GitHub Pages / Pavlovia / your computer) and CONFIG.libraries
+       (our copy in vendor/, or the one Pavlovia serves in lib/vendors/).
+       Do not add them here as well. --------------------------------- -->
+  <script src="src/platform.js"></script>
+
+  <!-- Styles (after jspsych.css, which platform.js adds) ------------- -->
+  <link href="css/experiment.css" rel="stylesheet">
+
+  <!-- Participant-facing text. Both languages load; CONFIG.language picks. -->
+  <script src="text/en/instructions.js"></script>
+  <script src="text/ja/instructions.js"></script>
+  <script src="text/en/words.js"></script>
+  <script src="text/ja/words.js"></script>
+
+  <script src="src/loader.js"></script>
+  <script src="src/validate.js"></script>
+  <script src="src/record.js"></script>
+  <script src="src/participant-id.js"></script>
+  <script src="src/calibration/screen-check.js"></script>
+  <script src="src/calibration/brightness-confirmation.js"></script>
+  <script src="src/calibration/gamma.js"></script>
+  <script src="src/phases/mock.js"></script>
+  <script src="src/phases/rating-grid.js"></script>
+  <script src="src/phases/consent.js"></script>
+  <script src="src/phases/anchoring.js"></script>
+  <script src="src/phases/words.js"></script>
+  <script src="src/phases/pairs.js"></script>
+  <script src="src/phases/grid.js"></script>
+  <script src="src/phases/state.js"></script>
+
+  <!-- Developer menu. Loaded ONLY here, never by index.html. -->
+  <script>window.DEV_MODE = true;</script>
+  <script src="src/dev-menu.js"></script>
+</head>
+
+<body>
+  <!-- main.js is deferred so the body exists before the timeline runs. -->
+  <script src="src/main.js" defer></script>
+</body>
+</html>

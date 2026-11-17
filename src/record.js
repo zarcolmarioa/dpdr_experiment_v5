@@ -1,0 +1,314 @@
+/* =========================================================================
+ * record.js — builds what ends up in the output file.
+ *
+ * Two jobs:
+ *   1. Stamp session-level properties onto every row (experiment, group,
+ *      interview date, set code, display; then participant ID; then the
+ *      target word ratings; then the closing stamps).
+ *   2. Build the per-trial row for a stimulus pair.
+ *
+ * Grid rows are built in phases/grid.js, the consent, anchoring and state
+ * rows in their own phase files.
+ *
+ * NAME COLLISION, IMPORTANT
+ * -------------------------
+ * jsPsych writes its own column called `trial_type`, holding the PLUGIN
+ * name ('html-keyboard-response', ...). trial_list.json ALSO has a column
+ * called `trial_type`, holding the DESIGN label ('sat_only', 'conflict',
+ * 'catch', ...).
+ *
+ * If both are written, one silently overwrites the other and a column is
+ * lost with no error. So the design label is renamed to `pair_type` on
+ * output. trial_list.json itself is never modified.
+ *
+ * KEY CASE, IMPORTANT
+ * -------------------
+ * jsPsych 7 returns key names LOWERCASED: 'arrowleft', not 'ArrowLeft'.
+ * CONFIG.keys uses the standard KeyboardEvent spelling, so every comparison
+ * between a recorded key and a configured key must be case-insensitive.
+ * Comparing them directly leaves response_side null on EVERY trial, which
+ * is silent because the raw `response` column still looks correct.
+ * ========================================================================= */
+
+var Record = (function () {
+
+  // -----------------------------------------------------------------------
+  // Session and task times.
+  //
+  //   session  from the session-start stamp (just before the consent
+  //            screen) to the save step.
+  //   task     from the onset of the first image trial (the first practice
+  //            trial, or the first pair trial if practice is off) to the
+  //            answer to the last pair trial.
+  //
+  // Times in the DATA are UTC (ISO 8601, ending in Z). The FILE NAMES use
+  // the session start in JAPAN TIME, so the response file and the contact
+  // file of one session carry the same stamp — see sessionStamp().
+  // -----------------------------------------------------------------------
+  var _sessionStart = null;   // Date
+  var _taskStart    = null;   // Date
+  var _taskEnd      = null;   // Date
+
+  var JST_OFFSET_MS = 9 * 60 * 60 * 1000;   // Japan: UTC+9, no daylight saving
+
+  function _sessionStartDate() {
+    if (!_sessionStart) _sessionStart = new Date();
+    return _sessionStart;
+  }
+
+  function sessionStartISO() {
+    return _sessionStartDate().toISOString();
+  }
+
+  // The session start in Japan time, safe for file names:
+  //   2026-10-30T14-12-40
+  // Computed from UTC + 9 h, so it is Japan time whatever time zone the
+  // participant's computer is set to.
+  function sessionStamp() {
+    var jst = new Date(_sessionStartDate().getTime() + JST_OFFSET_MS);
+    return jst.toISOString().slice(0, 19).replace(/:/g, '-');
+  }
+
+  // Called when an image trial (practice, pair or catch) is shown / answered.
+  // The first call to markTaskStart sets the start; every markTaskEnd moves
+  // the end, so the last one wins.
+  function markTaskStart() { if (!_taskStart) _taskStart = new Date(); }
+  function markTaskEnd()   { _taskEnd = new Date(); }
+
+  function _seconds(a, b) {
+    return (a && b) ? Math.round((b.getTime() - a.getTime()) / 1000) : null;
+  }
+
+  // -----------------------------------------------------------------------
+  // Session-level properties, added to every row by jsPsych.
+  //
+  // jsPsych's addProperties applies to rows already recorded as well as to
+  // future ones, so stamping these at the very start (before consent) puts
+  // them on every row of the file.
+  //
+  // `setCode` is the grid set swap (0 or 1), drawn once per session in
+  // main.js and used for the whole session — see grid.js.
+  // -----------------------------------------------------------------------
+  function stampSessionStart(jsPsych, setCode) {
+    jsPsych.data.addProperties({
+      experiment_name:      CONFIG.experiment.name,
+      experiment_version:   CONFIG.experiment.version,
+      // The platform actually used (CONFIG.platform 'auto' resolved), where
+      // name/email are kept, and where the libraries came from.
+      platform:             Platform.name(),
+      contact_storage:      Platform.contactStorage(),
+      libraries:            Platform.libraries(),
+      language:             Loader.language(),
+
+      // From the invitation link. group decides the wording of four
+      // screens; interview_date is '' when absent or invalid.
+      group:                Loader.group(),
+      interview_date:       Loader.interviewDate(),
+
+      // Which stimulus set this session saw.
+      stimulus_set:         Loader.stimulusSet(),
+
+      // Grid set swap: 0 = episode block shows set A, normal block set B;
+      // 1 = the reverse. Binomial, not exact — see interface_spec.md.
+      set_code:             setCode,
+
+      // UTC. The same moment, in Japan time, is the stamp in both file
+      // names (sessionStamp).
+      session_start_time:   sessionStartISO(),
+
+      // Display context, measured before full screen. The full-screen
+      // values are added by screen-check.js.
+      screen_width:         window.screen.width,
+      screen_height:        window.screen.height,
+      viewport_width:       window.innerWidth,
+      viewport_height:      window.innerHeight,
+      device_pixel_ratio:   window.devicePixelRatio,
+      user_agent:           navigator.userAgent,
+    });
+  }
+
+  // Who is running the session, once the ID screen has accepted an ID.
+  function stampParticipant(jsPsych, participantId, isSuperuser) {
+    jsPsych.data.addProperties({
+      participant_id: participantId,
+      is_test:        isSuperuser,
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Closing stamps, at the save step: session end and both durations, on
+  // every row. The durations are whole seconds; task_* are empty if no
+  // image trial ran (e.g. a dev session without trials).
+  // -----------------------------------------------------------------------
+  function stampSessionEnd(jsPsych, extra) {
+    var end = new Date();
+    var props = {
+      session_end_time:   end.toISOString(),
+      session_duration_s: _seconds(_sessionStartDate(), end),
+      task_start_time:    _taskStart ? _taskStart.toISOString() : null,
+      task_end_time:      _taskEnd   ? _taskEnd.toISOString()   : null,
+      task_duration_s:    _seconds(_taskStart, _taskEnd),
+    };
+    if (extra) {
+      for (var k in extra) {
+        if (Object.prototype.hasOwnProperty.call(extra, k)) props[k] = extra[k];
+      }
+    }
+    jsPsych.data.addProperties(props);
+  }
+
+  // -----------------------------------------------------------------------
+  // Promote the two TARGET word ratings to session-level columns, so they
+  // appear on every trial row: rating_foggy and rating_faded.
+  //
+  // The two targets are `foggy` and `faded`. Having them on every row means
+  // a between-participant step needs no join, and removes the chance of
+  // joining a participant to the wrong ratings.
+  //
+  // Only the targets are promoted. The other eight words stay on the
+  // word_ratings row (word_<id>).
+  //
+  // The ratings are taken AFTER the pair trials and the episode grid, but
+  // jsPsych's addProperties also writes them onto the rows already
+  // recorded, so they still end up on every row of the file, including
+  // every pair-trial row.
+  // -----------------------------------------------------------------------
+  function stampWordRatings(jsPsych, ratings) {
+    jsPsych.data.addProperties({
+      rating_foggy: (ratings.foggy === undefined) ? null : ratings.foggy,
+      rating_faded: (ratings.faded === undefined) ? null : ratings.faded,
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Map a recorded key onto a side.
+  //
+  // BOTH sides of the comparison are lowercased, so this keeps working
+  // whichever spelling jsPsych returns and whichever spelling is written
+  // in CONFIG.keys. See the KEY CASE note in the header.
+  // -----------------------------------------------------------------------
+  function keyToSide(key) {
+    if (key === null || key === undefined) return null;
+    var k = String(key).toLowerCase();
+    if (k === String(CONFIG.keys.left).toLowerCase())  return 'left';
+    if (k === String(CONFIG.keys.right).toLowerCase()) return 'right';
+    return null;
+  }
+
+  // -----------------------------------------------------------------------
+  // Per-trial data for a stimulus pair.
+  //
+  // `row` is one entry from trial_list.json. The returned object is attached
+  // to the jsPsych trial via its `data` parameter, so these become columns.
+  //
+  // Note what is NOT computed here: whether the participant "chose A".
+  // Only the raw side is stored. Mapping side -> A/B via a_is_left happens
+  // in the analysis script, where it can be checked.
+  // -----------------------------------------------------------------------
+  //
+  // pred_sat and pred_fog are the registered model's predictors (corpus-SD
+  // units, positive = image A is the predicted choice); d_* and z_* are
+  // kept for reference. All are copied unchanged from the frozen list.
+  // -----------------------------------------------------------------------
+  function pairTrialData(row) {
+    return {
+      block:             'pairs',
+      trial_index_list:  row.trial,          // index within trial_list.json
+      pair_type:         row.trial_type,     // renamed — see header
+      analysed:          row.analysed,
+      scene_id:          row.scene_id,
+      category:          row.category,
+      left_path:         row.left_path,
+      right_path:        row.right_path,
+      a_is_left:         row.a_is_left,
+      pred_sat:          row.pred_sat,
+      pred_fog:          row.pred_fog,
+      d_sat:             row.d_sat,
+      d_fog:             row.d_fog,
+      z_sat:             row.z_sat,
+      z_fog:             row.z_fog,
+      mag_bin:           row.mag_bin,
+      catch_mode:        row.catch_mode,         // catch trials only
+      repeat_of:         row.repeat_of,          // consistency trials only
+      display_px:        CONFIG.display.image_px,
+    };
+  }
+
+  // -----------------------------------------------------------------------
+  // Runs after a pair trial finishes. Converts the pressed key into a side,
+  // and scores catch trials.
+  //
+  // There is no response timeout in this experiment, so `no_response` should
+  // never be true. It is recorded anyway: if it ever appears, key handling
+  // has gone wrong and those rows need inspecting rather than silently
+  // entering the analysis as missing data.
+  // -----------------------------------------------------------------------
+  function finishPairTrial(data) {
+    data.response_key  = data.response;             // raw, as jsPsych gave it
+    data.response_side = keyToSide(data.response);
+    data.no_response   = (data.response_side === null);
+  }
+
+  // -----------------------------------------------------------------------
+  // Runs after a catch trial. Scores the single keypress against the target.
+  //
+  // The trial list carries no expected response: the target comes from
+  // CONFIG.catch_trials.sequence, one per catch row, in order (catch_mode
+  // 'no_images'). The catch key is an attention probe, not a design
+  // factor — it enters no analysis.
+  //
+  // Both the target and the response are recorded. HOW someone failed is
+  // informative: a left or right press means the trained side-choosing
+  // response fired without reading, while a scattered key means general
+  // disengagement.
+  // -----------------------------------------------------------------------
+  function finishCatchTrial(data) {
+    var pressed = (data.response === null || data.response === undefined)
+      ? null : String(data.response).toLowerCase();
+    var target  = String(data.catch_key).toLowerCase();
+
+    data.response_key = data.response;
+    data.catch_pass   = (pressed === target);
+    data.no_response  = (pressed === null);
+
+    // Did the participant press a response key instead of reading?
+    data.catch_pressed_side = (keyToSide(data.response) !== null);
+  }
+
+  // -----------------------------------------------------------------------
+  // Filename for the uploaded file:
+  //     <participant_id>_<stimulus_set>_<session start, Japan time>.csv
+  //     e.g. R_9rJJWk01c767jE8_v4_2026-10-30T14-12-40.csv
+  //
+  // The stamp is the SESSION START (not the upload time), so it is the same
+  // in the contact file's name (contact_<participant_id>_<stamp>.csv) and
+  // in the download offered if the upload fails.
+  //
+  // The set appears in the name as well as in the data. That redundancy is
+  // deliberate: the OSF component can be sorted by arm without opening
+  // anything, and if a file is ever truncated or fails to parse, the one
+  // piece of metadata that could not be recovered is still readable.
+  //
+  // Colons and dots are stripped so the name is safe on every filesystem.
+  // -----------------------------------------------------------------------
+  function sessionFilename(participantId) {
+    var set = Loader.stimulusSet();
+    return participantId + '_' + set + '_' + sessionStamp() + '.csv';
+  }
+
+  return {
+    stampSessionStart: stampSessionStart,
+    stampParticipant:  stampParticipant,
+    stampSessionEnd:   stampSessionEnd,
+    keyToSide:         keyToSide,
+    stampWordRatings:  stampWordRatings,
+    pairTrialData:     pairTrialData,
+    finishPairTrial:   finishPairTrial,
+    finishCatchTrial:  finishCatchTrial,
+    sessionFilename:   sessionFilename,
+    sessionStamp:      sessionStamp,
+    sessionStartISO:   sessionStartISO,
+    markTaskStart:     markTaskStart,
+    markTaskEnd:       markTaskEnd,
+  };
+})();
