@@ -31,7 +31,7 @@
  *
  * 'datapipe' (GitHub Pages, and local runs):
  *   - they are REMOVED from the jsPsych data as soon as the screen ends, so
- *     they never appear in the response CSV uploaded to OSF;
+ *     they never appear in the response CSV uploaded to Zenodo;
  *   - they are uploaded straight away as a separate one-row CSV to a
  *     SEPARATE DataPipe experiment (CONFIG.contact_datapipe), so the file
  *     that identifies people can be restricted or deleted on its own;
@@ -181,10 +181,10 @@ var ParticipantID = (function () {
 
   // DataPipe replies in one of three ways:
   //
-  //   'saved'   {message: 'Success'}                 — on OSF now
+  //   'saved'   {message: 'Success'}                 — on Zenodo now
   //   'queued'  {message: 'Data received. OSF upload
   //              will be retried automatically.'}    — DataPipe HAS the
-  //             file; OSF was slow or briefly down and DataPipe keeps
+  //             file; the store was slow or briefly down and DataPipe keeps
   //             retrying on its own. The data is safe.
   //   'failed'  anything else, including an {error: ...} reply
   //
@@ -386,7 +386,7 @@ var ParticipantID = (function () {
         }
 
         // REMOVE everything typed from the response data, so name and email
-        // can never reach the OSF response file. (The ID is kept above as
+        // can never reach the uploaded response file. (The ID is kept above as
         // id_entered.)
         data.response = null;
         data.contact_name_given  = askName  ? (name.length  > 0) : null;
