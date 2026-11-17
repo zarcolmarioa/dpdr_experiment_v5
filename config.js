@@ -11,22 +11,34 @@ var CONFIG = {
   // Experiment identity — stamped onto every row of the output.
   // -----------------------------------------------------------------------
   experiment: {
-    name:    'derealization_grid',
-    version: '0.9.0-v4',
+    name:    'derealization_v5b',
+    version: '1.0.0-v5b',
   },
 
   // -----------------------------------------------------------------------
   // Groups. Read from ?group= in the invitation link — never asked on
-  // screen. The group changes ONLY the wording of four things (anchoring
-  // screen, trial prompt, episode-grid question, word-rating instruction
-  // and question); everything else is identical. Each group-dependent
-  // string in text/en and text/ja is an object keyed by these names, and
-  // validate.js checks every one has both.
+  // screen. The group decides which two episodes the session's two blocks
+  // are about (design.json: groups):
+  //   participant  derealization + ordinary
+  //   control      ordinary + expectation
+  // and the wording of the episode screens and the word-rating
+  // instruction. Group- and episode-dependent strings in text/en and
+  // text/ja are objects keyed by group or episode; validate.js checks every
+  // one has every version in both languages.
   //
   // A link with no group, or one not listed here, does not start: it shows
   // the same "incomplete link" message as a missing participant ID.
   //
   // Stamped on every row as `group`.
+  //
+  // SLOT. Every invitation link also carries ?slot=<n> (a whole number,
+  // 1 or more). Slot n uses row ((n - 1) mod 64) + 1 of the group's table
+  // in the package's assignment.json, which names, for block positions 1
+  // and 2, the episode, the set, the list and the practice file. Slots are
+  // handed out in sequence per group and never reused. A link without a
+  // valid slot (missing, 0, negative, not a whole number) does not start:
+  // it shows the "incomplete link" message. Stamped on every row as `slot`
+  // and `assignment_row`.
   //
   // The link may also carry ?idate=YYYY-MM-DD, the date of the
   // participant's interview, added by the researcher who schedules the
@@ -34,7 +46,7 @@ var CONFIG = {
   // every row as `interview_date`; a missing or invalid one leaves it empty
   // (and logs a console warning) — the session still runs.
   //
-  // A full link:  .../?pid=R_xxxxxxxxxxxxxxx&group=participant&idate=2026-11-03
+  // A full link:  .../?pid=R_xxxxxxxxxxxxxxx&group=participant&slot=1&idate=2026-11-03
   // -----------------------------------------------------------------------
   groups: ['participant', 'control'],
 
@@ -48,7 +60,7 @@ var CONFIG = {
   //                The SAME files then work on GitHub Pages, on Pavlovia
   //                and on your computer, with nothing to edit.
   //   'local'    — CSV downloads to your own Downloads folder. No upload.
-  //   'github'   — uploads via DataPipe to the OSF component.
+  //   'github'   — uploads via DataPipe, which stores the file on Zenodo.
   //   'pavlovia' — Pavlovia handles saving (results in the Pavlovia
   //                project's data/ folder). See SETUP.md, "Pavlovia".
   //
@@ -74,16 +86,22 @@ var CONFIG = {
   libraries: 'bundled',
 
   // -----------------------------------------------------------------------
-  // DataPipe / OSF target.
+  // DataPipe target. DataPipe stores each uploaded file on Zenodo.
+  //
+  // >>> TEST EXPERIMENT — REPLACE BEFORE DATA COLLECTION. <<<
+  // This experiment_id (and contact_datapipe.experiment_id below) are the
+  // TEST experiments, kept so the v5b code can be tested end to end. Their
+  // data mix with older test sessions. Before collecting real data, create
+  // new DataPipe experiments for v5b and put their IDs here — see the
+  // "Before data collection" checklist in README.md.
   //
   // IMPORTANT: on the DataPipe dashboard, "Enable data collection?" must be
   // switched ON or every upload is rejected. The experiment will report the
   // rejection on screen, but it is easy to forget.
   // -----------------------------------------------------------------------
   datapipe: {
-    experiment_id: 'VoYGtg5yKGr2',  // 'yZIXKcYy54Uw',
-    osf_project:   'tx5h2',   // recorded for reference only
-    osf_component: 'qsv56',   // recorded for reference only
+    experiment_id: 'VoYGtg5yKGr2',  // TEST experiment — replace before data collection
+    zenodo_record: '[Zenodo record — to complete]',   // for reference only
   },
 
   // -----------------------------------------------------------------------
@@ -113,8 +131,8 @@ var CONFIG = {
   // With contact_storage 'datapipe' (GitHub Pages), name and email are
   // NEVER written to the response data. They are uploaded as a separate
   // small file (ID + name + email) to a separate DataPipe experiment and
-  // OSF component — see `contact_datapipe` below — so the response data on
-  // OSF stays pseudonymised, and the file that identifies people can be
+  // Zenodo record — see `contact_datapipe` below — so the response data on
+  // Zenodo stays pseudonymised, and the file that identifies people can be
   // restricted or deleted on its own. The response data only records
   // whether each was given (true/false).
   // With contact_storage 'results_file' (Pavlovia) they are kept in the
@@ -172,7 +190,7 @@ var CONFIG = {
     //                    Nothing is sent to DataPipe. Meant for Pavlovia,
     //                    where the results stay in the private Pavlovia
     //                    project. NEVER use it with 'github': the response
-    //                    file goes to OSF.
+    //                    file goes to Zenodo.
     //
     // The consent and ID screens say which applies (the *_results_file
     // texts). Stamped on every row as `contact_storage`.
@@ -188,11 +206,13 @@ var CONFIG = {
   //   - under Validation, set Required Fields to `participant_id`
   //     (NOT `trial_type`: this file is not written by jsPsych and has no
   //     trial_type column, so that requirement would reject every upload)
+  //
+  // >>> TEST EXPERIMENT — REPLACE BEFORE DATA COLLECTION (see datapipe,
+  // above, and README.md). <<<
   // -----------------------------------------------------------------------
   contact_datapipe: {
-    experiment_id: 'T8mzFmXrMcjw',  // 'T2jZJusQxUGv',
-    osf_project:   'q3hwn',   // recorded for reference only
-    osf_component: 'qt9x8',   // recorded for reference only
+    experiment_id: 'T8mzFmXrMcjw',  // TEST experiment — replace before data collection
+    zenodo_record: '[Zenodo record — to complete]',   // for reference only
   },
 
   // -----------------------------------------------------------------------
@@ -229,30 +249,28 @@ var CONFIG = {
   // the target — there is no retry. A trial that waited for the correct key
   // could only ever end in success and would discriminate nothing.
   //
-  // `sequence` is applied in order to the catch trials as they appear in
-  // trial_list.json, so assignment is deterministic and reproducible. The
-  // trial list carries no expected response (no correct_response column):
-  // the target lives here, with the instruction text.
+  // THE TARGETS COME FROM THE PACKAGE (design.json:
+  // catch.targets_by_block_position), one list per block position, applied
+  // in order to the catch rows of that block's list and RESTARTING at the
+  // first target in each block. The lists carry no expected response; the
+  // target is recorded on the row as catch_target. Five targets per block
+  // for the five catch rows of each list.
   //
-  // Ten targets for the ten catch rows of the v4 list: 5 up, 5 down, in a
-  // fixed mixed order with never more than two identical targets in a row,
-  // so the target cannot be learnt. validate.js checks the length equals
-  // the number of catch rows, the balance, and the run length.
-  //
-  // Chance of passing by mashing arrows is 1/4 per trial, so P(7+ of 10)
-  // is under 0.4%. Mashing left/right — the most likely disengaged
-  // behaviour — fails every time.
+  // Failures are counted per block (catch_fail_b1, catch_fail_b2) and in
+  // total (catch_fail_total). The exclusion rule (3 or more failures over
+  // both blocks, design.json: catch.exclude_at_or_above) is applied in the
+  // analysis; the experiment only records.
   //
   // `mode` is what this code implements: 'no_images'. Every catch row of
-  // trial_list.json carries a `catch_mode`; validate.js refuses to start if
-  // any row expects a different kind of catch trial.
+  // the lists carries a `catch_mode`, and design.json a catch.mode;
+  // validate.js refuses to start if either expects a different kind.
   // -----------------------------------------------------------------------
   catch_trials: {
     mode:       'no_images',
-    sequence:   ['ArrowUp',   'ArrowDown', 'ArrowDown', 'ArrowUp',   'ArrowDown',
-                 'ArrowUp',   'ArrowUp',   'ArrowDown', 'ArrowUp',   'ArrowDown'],
     lockout_ms: 750,   // keys dead for this long, so a carried-over
-                       // reflex press from the previous trial cannot land
+                       // reflex press from the previous trial cannot land.
+                       // Not a minimum response time: the catch rt is
+                       // measured from the end of the lockout.
   },
 
   // -----------------------------------------------------------------------
@@ -296,43 +314,32 @@ var CONFIG = {
   language: 'en',
 
   // -----------------------------------------------------------------------
-  // Stimulus sets.
+  // Stimulus package.
   //
-  // Each set lives in its own folder under sets_dir and holds everything
-  // it needs:
+  // The package lives in its own folder under sets_dir and holds everything
+  // the experiment needs:
   //
-  //     data/sets/<set>/trial_list.json
-  //     data/sets/<set>/preload.json
+  //     data/sets/<set>/design.json       counts, groups, lists, catch
+  //                                       targets, breaks, rest
+  //     data/sets/<set>/assignment.json   64 slots per group
+  //     data/sets/<set>/lists/*.json      one block's 200 main trials each
+  //     data/sets/<set>/practice/block1.json, block2.json
+  //     data/sets/<set>/preload.json      every image a list or practice
+  //                                       row shows
   //     data/sets/<set>/stimuli/*.png
-  //     data/sets/<set>/grid/{grid_trials.json, preload.json, stimuli/}
   //
-  // `v4` is the preregistered set: 211 pair trials (180 analysed) and the
-  // two-block grid package. Its folders are FROZEN copies of
-  // drl2drv_updated/data_trials — verified against the frozen checksums —
-  // and must never be edited, re-encoded, resized or renamed.
+  // `v5b_180` is the registered two-block package. It is a FROZEN copy,
+  // byte-identical to the registered package, and must never be edited,
+  // re-encoded, resized or renamed. tools/check_package.js checks it.
   //
-  // The older sets (lum_p05, contrast_local) are left on disk for reference
-  // but are no longer in available_sets: their formats are not supported by
-  // the current loader and validator, and ?set= cannot select them.
-  //
-  // They are kept together because a trial list and its images are a
-  // matched pair — a list referencing the other set's filenames would fail
-  // at preload. Keeping them in one folder makes that mismatch impossible.
-  //
-  // Set names describe the feature used to select the stimuli, so the
-  // distinction stays legible later.
-  //
-  // `set` is the default. ?set=<name> in the URL overrides it, which lets
-  // sets be assigned per participant when the invitation links are
-  // generated, with no redeploy between participants.
-  //
-  // The active set is stamped onto every output row as `stimulus_set` and
-  // into the uploaded filename. If both sets are piloted, that column is
-  // what makes the data interpretable.
+  // `set` is the default; ?set=<name> overrides it, but only names in
+  // available_sets are accepted. Stamped on every row as `stimulus_set` and
+  // in the uploaded filename. (The set A/B a block uses is a different
+  // thing: it is recorded per row as `set`.)
   // -----------------------------------------------------------------------
   data: {
-    set:            'v4',
-    available_sets: ['v4'],
+    set:            'v5b_180',
+    available_sets: ['v5b_180'],
     sets_dir:       'data/sets/',
   },
 
@@ -347,17 +354,21 @@ var CONFIG = {
   //    3. participant ID              participant.collect_*
   //    4. brightness                  calibration.brightness
   //    5. gamma matching              calibration.gamma
-  //    6. anchoring                   blocks.anchoring
-  //    7. practice                    blocks.practice
-  //    8. pair trials                 blocks.main
-  //    9. episode grid block          blocks.grid_episode
+  //    6. episode selection           blocks.episodes
+  //    7. block 1: reinstatement, practice, 200 trials with breaks
+  //    8. rest (1 minute)             blocks.rest
+  //    9. block 2: as block 1, with the second episode
   //   10. word ratings                blocks.words
-  //   11. normal-appearance grid      blocks.grid_normal
-  //   12. state items (optional)      blocks.state
-  //   13. save, 14. completion screen
+  //   11. state items                 blocks.state
+  //   12. save, 13. completion screen
+  //
+  // Within each block: blocks.practice (the practice trials) and
+  // blocks.main (the 200 main trials). blocks.positions says which block
+  // positions run: [1, 2] for a real session; dev.html can run one alone.
   //
   // CONSENT IS REQUIRED for a real session. index.html refuses to start
-  // with blocks.consent off (validate.js); only dev.html can run without it.
+  // with blocks.consent off, or with positions other than [1, 2]
+  // (validate.js); only dev.html can.
   // -----------------------------------------------------------------------
   blocks: {
     consent:      true,   // first screen; declining ends the session with
@@ -365,85 +376,79 @@ var CONFIG = {
     size_check:   false,  // developer screen showing the measured panel
                           // size. Not for participants; the 'Screen & size
                           // check' dev preset switches it on.
-    anchoring:    true,   // bring one episode to mind (participants) /
-                          // what derealization is (controls)
-    practice:     true,
-    main:         true,
-    mock:         false,  // six placeholder trials; superseded by 'main'
-    grid_episode: true,   // grid block after the pair trials, with "None
-                          // of these"
-    grid_none_followup: true,  // after a screen answered "None of these":
-                          // "Which comes closest?" with five clickable,
-                          // position-based options (no visual words), not
-                          // required. Only where the screen has a "None"
-                          // button (the episode block).
-    words:        true,   // word ratings — AFTER the episode grid
-    grid_normal:  true,   // grid block after the word ratings, no "None"
-    state:        true,   // four state items at the end (optional block)
+    episodes:     true,   // episode selection: identifying words and the
+                          // five recall questions per recalled episode
+    practice:     true,   // the practice trials before each block
+    main:         true,   // the 200 main trials of each block
+    rest:         true,   // the fixed rest between the two blocks
+    words:        true,   // word ratings, once, after block 2
+    state:        true,   // four state items at the end
+    positions:    [1, 2], // block positions to run (dev.html only may change)
   },
 
   // -----------------------------------------------------------------------
-  // Anchoring screen: the questions about the episode, shown to the
-  // PARTICIPANT group only (controls have no episode to describe). Each can
-  // be switched off; with all four off the screen shows only the text.
-  // None of them is required — Continue always works, and an unanswered
-  // question is recorded empty.
+  // Episode questions. For each RECALLED episode (participants: the
+  // derealization and the ordinary episode; controls: the ordinary
+  // episode), one screen asks:
   //
-  //   when      When was it?               short text field + example hint
-  //   duration  How long did it last?      short text field + example hint
-  //   where     Where were you?            short text field + example hint
-  //   clarity   How clearly do you remember it?   0-6 + Prefer not to say
+  //   words      a few words to identify it      free text, REQUIRED
+  //   when       When was it?                    free text or Prefer not to say
+  //   duration   How long did it last?           free text or Prefer not to say
+  //   where      Where were you?                 free text or Prefer not to say
+  //   tone       unpleasant ... pleasant         -3 .. +3 or Prefer not to say
+  //   intensity  emotional intensity             0 .. 6  or Prefer not to say
   //
-  // Columns on the anchoring row: episode_when, episode_duration,
-  // episode_where (the typed text), episode_clarity. See
+  // Every question must be answered (Prefer not to say counts as an
+  // answer), so nobody skips one by accident and nobody is forced to
+  // disclose. Continue stays disabled until all are answered. The
+  // expectation block (controls) has no questions: its screen shows the
+  // short description of derealization.
+  //
+  // Answers are stamped on every row as ep_<episode>_<question>. See
   // DATA_DICTIONARY.md §6.
   // -----------------------------------------------------------------------
-  anchoring: {
-    questions: {
-      when:     true,
-      duration: true,
-      where:    true,
-      clarity:  true,
-    },
+  episodes: {
+    text_max: 200,    // characters per free-text answer
   },
 
   // -----------------------------------------------------------------------
-  // Grid block layout. The cell size is computed from the window (six
-  // columns of 512 px fit no laptop), once per block, for the widest screen
-  // in the package:
+  // Practice. OVERRIDES design.json.
   //
-  //   byWidth  = (innerWidth  - page_side_px - (cols-1)*col_gap_px) / cols
-  //              - cell_chrome_px
-  //   byHeight = (innerHeight - chrome_px    - (rows-1)*row_gap_px) / rows
-  //   cell     = max(min_cell_px, floor(min(byWidth, byHeight, max_cell_px)))
+  // design.json says 6 practice trials before block 1 with feedback and 3
+  // before block 2 without (practice_by_block, practice_feedback_by_block_
+  // position). The study runs 3 practice trials before EACH block, both
+  // with feedback:
+  //   block 1  the first 3 rows of practice/block1.json
+  //            (one sat_only, one fog_only, one together)
+  //   block 2  the 3 rows of practice/block2.json
+  // The package is not changed; the override is applied here. validate.js
+  // checks each practice file has at least this many rows. The values used
+  // are stamped on every row (practice_trials_b1, practice_trials_b2,
+  // practice_feedback_b1, practice_feedback_b2).
   //
-  // These are the constants of interface_spec.md, and the grid package
-  // ships them as `layout`. validate.js refuses to start if the two differ.
-  // The computed size is recorded on every grid row as cell_px.
+  // Feedback = the chosen image is outlined for timing.practice_feedback_ms
+  // after EVERY practice trial of a block with feedback on.
   // -----------------------------------------------------------------------
-  grid: {
-    max_cell_px:    240,
-    min_cell_px:    100,
-    row_gap_px:     6,    // between scenes within a column
-    col_gap_px:     22,   // between columns — wider, so columns read as units
-    chrome_px:      190,  // vertical space kept for question and buttons
-    page_side_px:   48,   // horizontal margin of the page
-    cell_chrome_px: 14,   // per column: 2 x (3 px border + 4 px padding)
+  practice: {
+    trials_by_block_position:   { 1: 3, 2: 3 },
+    feedback_by_block_position: { 1: true, 2: true },
   },
 
   // -----------------------------------------------------------------------
-  // Limits. For quick testing only — leave at 0 for real sessions.
+  // Limits. DEV.HTML ONLY — leave at 0.
   //
-  // max_trials truncates the main block to its first N trials. Useful for
-  // confirming an upload reaches OSF without sitting through 205 trials.
+  // max_trials shortens EACH block to its first N main trials, and
+  // max_practice the practice of each block to its first N trials. Useful
+  // for checking a whole session, or an upload, in a few minutes.
   //
-  // A truncated session is NOT valid data: it will be missing catch and
-  // consistency trials, and the predictor spread the analysis depends on.
-  // Any session run with a limit is stamped `is_dev = true`.
+  // A shortened session is NOT valid data: it misses catch and consistency
+  // trials. Limits are ignored outside dev.html, and validate.js refuses to
+  // start index.html while either is set. A shortened session is stamped
+  // is_dev = true, shortened = true and shortened_to = N on every row.
   // -----------------------------------------------------------------------
   limits: {
-    max_trials:   0,   // 0 = all main trials
-    max_practice: 0,   // 0 = all practice trials
+    max_trials:   0,   // 0 = all 200 main trials per block
+    max_practice: 0,   // 0 = all practice trials (see practice, above)
   },
 
   // -----------------------------------------------------------------------
@@ -475,22 +480,16 @@ var CONFIG = {
   timing: {
     fixation_ms: 500,
     blank_ms:    250,
-    break_every: 41,   // break after every N main trials; 0 disables.
-                       // 205 main trials / 41 = 5 equal parts, 4 breaks.
+    // Breaks: after trials 40, 80, 120 and 160 of each block, taken from
+    // design.json (timing.breaks_after_trial); not set here.
 
-    // Practice feedback: the chosen image is outlined for this long, on
-    // the first N practice trials only. The remaining practice trials run
-    // exactly like the main block, so the transition is not itself a
-    // change in conditions.
-    practice_feedback_trials: 2,
-    practice_feedback_ms:     900,
-  },
+    // Practice feedback: the chosen image is outlined for this long, after
+    // every practice trial of a block with feedback (see practice, above).
+    practice_feedback_ms: 900,
 
-  // -----------------------------------------------------------------------
-  // Smoke test settings. Ignored once the real phases are in place.
-  // -----------------------------------------------------------------------
-  mock: {
-    n_trials: 6,
+    // The fixed rest between the two blocks. A countdown is shown, and
+    // Continue appears only when it reaches zero.
+    rest_ms: 60000,
   },
 
   // -----------------------------------------------------------------------
