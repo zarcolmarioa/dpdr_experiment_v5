@@ -3,10 +3,10 @@
  *
  * WHEN THEY ARE RATED
  * -------------------
- * After the pair trials and the episode grid block, and before the
- * normal-appearance grid block. Participants rate how well each word
- * describes how their surroundings looked during the episode they brought
- * to mind on the anchoring screen; controls rate how well each word
+ * Once, after block 2. Participants rate how well each word describes how
+ * their surroundings looked during the DEREALIZATION episode (the episode
+ * they described in the interview, named with their own identifying words,
+ * {WORDS}, whichever block came last); controls rate how well each word
  * describes how the surroundings might look to someone experiencing
  * derealization. Same scale, same grid, for both groups.
  *
@@ -26,7 +26,8 @@
  *  - Only `label` is participant-facing. Change wording there, never ids.
  *
  * GROUP-DEPENDENT STRINGS: `instruction` and `question_short` (one entry
- * per group). Everything else is shared.
+ * per group). Everything else is shared. Only the participant versions
+ * may mention the interview (see instructions.js).
  *
  * The framing rules in instructions.js apply to the instruction and the
  * question (not to the rated words themselves, which are the measure).
@@ -40,6 +41,8 @@ var WORDS_EN = {
   instruction: {
     participant:
       '<p>On the next screen you will see a list of words.</p>' +
+      '<p>Please think again of <b>the episode you described in the ' +
+      'interview</b> (<span class="ep-words">{WORDS}</span>).</p>' +
       '<p><b>During that episode, how well does each word describe how your ' +
       'surroundings looked?</b></p>' +
       '<p>Rate every word from 0 (not at all) to 6 (exactly). Some words will ' +
@@ -56,8 +59,9 @@ var WORDS_EN = {
 
   // The one-line header above the grid.
   question_short: {
-    participant: 'During that episode, how well does each word describe how ' +
-                 'your surroundings looked?',
+    participant: 'During the episode you described in the interview ' +
+                 '(&ldquo;{WORDS}&rdquo;), how well does each word describe ' +
+                 'how your surroundings looked?',
     control:     'How well does each word describe how the surroundings might ' +
                  'look to someone experiencing derealization?',
   },

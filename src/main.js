@@ -1,9 +1,10 @@
 /* =========================================================================
  * main.js — assembles the timeline and runs it.
  *
- * Before anything: the GROUP must come from the link (?group=participant
- * or ?group=control). Without a valid one the session does not start; it
- * shows the "incomplete link" screen and nothing is recorded.
+ * Before anything: the GROUP and the SLOT must come from the link
+ * (?group=participant|control and ?slot=<n>). Without a valid group, a
+ * valid slot, or an assignment row for them, the session does not start;
+ * it shows the "incomplete link" screen and nothing is recorded.
  *
  * A session, the same for both groups (each step has its own switch in
  * config.js):
@@ -12,30 +13,34 @@
  *    2. full screen + window check   calibration/screen-check.js
  *       a window too small for the trial layout STOPS the session here,
  *       before the ID screen, so nothing is uploaded.
- *       On Pavlovia the Pavlovia session is opened only after this step,
- *       so a declined or stopped session never opens one.
- *    3. participant ID (+ optional name/email: uploaded separately, or on
- *       Pavlovia kept in the response file — see Platform.contactStorage)
- *       -> the background image download starts after this screen
+ *       On Pavlovia the Pavlovia session is opened only after this step.
+ *    3. participant ID (+ optional name/email)
+ *       -> the background image download (all of preload.json, block 1's
+ *          images first) starts after this screen
  *    4. brightness confirmation      calibration/brightness-confirmation.js
  *    5. gamma matching               calibration/gamma.js
- *    6. anchoring                    phases/anchoring.js   blocks.anchoring
- *    7. practice                     phases/pairs.js       blocks.practice
- *    8. pair trials (205)            phases/pairs.js       blocks.main
- *    9. episode grid block           phases/grid.js        blocks.grid_episode
+ *    6. episode selection            phases/episodes.js    blocks.episodes
+ *    7. block 1                      phases/pairs.js (+ the reinstatement
+ *                                    screen from phases/episodes.js)
+ *    8. rest, 1 minute               phases/rest.js        blocks.rest
+ *    9. block 2                      as block 1
  *   10. word ratings                 phases/words.js       blocks.words
- *   11. normal-appearance grid block phases/grid.js        blocks.grid_normal
- *   12. state items (optional)       phases/state.js       blocks.state
- *   13. save  (DataPipe / Pavlovia / local download), by Platform.name()
- *   14. completion screen, showing whether the upload succeeded
+ *   11. state items                  phases/state.js       blocks.state
+ *   12. save  (DataPipe / Pavlovia / local download), by Platform.name()
+ *   13. completion screen, showing whether the upload succeeded
  *
- * Session-level stamps on every row: experiment, group, interview_date,
- * set_code (the grid set swap, drawn once here), display, consent_given,
- * participant_id / is_test, the target word ratings, the closing stamps.
+ * Each block: preload gate, reinstatement, practice (3 trials with
+ * feedback), 200 main trials with breaks after 40, 80, 120 and 160.
+ * blocks.positions ([1, 2]) says which blocks run; dev.html may run one.
+ *
+ * Session-level stamps on every row: experiment, group, slot and the
+ * assignment row, interview_date, display, consent_given, participant_id /
+ * is_test, the episode answers, block and rest times, catch failures per
+ * block, the target word ratings, the closing stamps.
  * ========================================================================= */
 
-/* global CONFIG, ParticipantID, Record, MockPhase, PairsPhase, WordsPhase, GridPhase,
-          ConsentPhase, AnchoringPhase, StatePhase,
+/* global CONFIG, ParticipantID, Record, PairsPhase, WordsPhase, RestPhase,
+          ConsentPhase, EpisodesPhase, StatePhase,
           ScreenCheck, BrightnessConfirmation, GammaCalibration,
           Loader, Validate, DevMenu, Platform, TEXT_EN, TEXT_JA,
           initJsPsych, jsPsychHtmlKeyboardResponse, jsPsychSurveyText,
@@ -102,7 +107,7 @@ function _buildPavloviaInit() {
 // ---------------------------------------------------------------------------
 // Save nodes.
 //
-// 'github'   -> DataPipe upload to the OSF component
+// 'github'   -> DataPipe upload (DataPipe stores the file on Zenodo)
 // 'pavlovia' -> Pavlovia finish command
 // 'local'    -> a node below downloads the CSV to the participant's computer
 // ---------------------------------------------------------------------------
@@ -191,7 +196,7 @@ function _buildSaveNodes() {
       command: 'finish',
       // Pavlovia names the file <project>_<participantId>_SESSION_<date>.csv.
       // participantId carries the same ID, set and Japan-time stamp as the
-      // DataPipe file name, e.g. R_xxx_v4_2026-10-30T14-12-40.
+      // DataPipe file name, e.g. R_xxx_v5b_180_2026-11-30T14-12-40.
       participantId: function () {
         return Record.sessionFilename(ParticipantID.get() || 'NOID')
                      .replace(/\.csv$/, '');
@@ -260,10 +265,10 @@ function _statusHTML(status) {
                                     'in the project\'s data/ folder</span>';
   if (status === 'pilot')  return '<span class="ok">PILOTING &mdash; file downloaded ' +
                                   'to this computer, not stored on Pavlovia</span>';
-  if (status === 'saved')  return '<span class="ok">SAVED &mdash; on OSF now</span>';
+  if (status === 'saved')  return '<span class="ok">SAVED &mdash; on Zenodo now</span>';
   if (status === 'queued') return '<span class="ok">RECEIVED by DataPipe &mdash; ' +
-                                  'OSF upload pending, DataPipe retries automatically. ' +
-                                  'Check OSF in a few minutes.</span>';
+                                  'Zenodo upload pending, DataPipe retries automatically. ' +
+                                  'Check Zenodo in a few minutes.</span>';
   if (status === 'failed') return '<span class="fail">FAILED</span>';
   return '<code>not attempted</code> (no name/email given, or still running)';
 }
@@ -368,27 +373,12 @@ function _buildCompletionNode() {
 }
 
 // ---------------------------------------------------------------------------
-// The grid set swap, drawn ONCE per session with p = .5 and used for the
-// whole session (interface_spec.md: rule random_recorded). dev.html may fix
-// it with ?set_code=0 or 1, for testing both arrangements; index.html never
-// reads that parameter.
+// "Incomplete link": no valid ?group= or ?slot=. The same kind of message
+// as a missing participant ID. Nothing is recorded or uploaded.
 // ---------------------------------------------------------------------------
-function _drawSetCode() {
-  if (window.DEV_MODE) {
-    var forced = new URLSearchParams(window.location.search).get('set_code');
-    if (forced === '0' || forced === '1') return parseInt(forced, 10);
-  }
-  return (Math.random() < 0.5) ? 0 : 1;
-}
-
-// ---------------------------------------------------------------------------
-// "Incomplete link": no valid ?group=. The same kind of message as a
-// missing participant ID. Nothing is recorded or uploaded.
-// ---------------------------------------------------------------------------
-function _runIncompleteLink() {
+function _runIncompleteLink(reason) {
   var L = Loader.text().link;
-  console.warn('[Main] ?group= is missing or invalid (expected one of ' +
-               CONFIG.groups.join(', ') + ') — session not started.');
+  console.warn('[Main] ' + reason + ' — session not started.');
   jsPsych.run([{
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<div class="card"><h2>' + L.missing_title + '</h2>' +
@@ -400,29 +390,26 @@ function _runIncompleteLink() {
 
 // ---------------------------------------------------------------------------
 // Start the image download in the BACKGROUND. Does not block: the
-// participant carries on with calibration and the anchoring screen while
-// the images arrive. Each block's preload gate then waits for whatever is
-// still missing. Pair images first (needed first), then the episode grid's
-// set, then the normal grid's.
+// participant carries on with calibration and the episode screens while
+// the images arrive. Every image in preload.json (both blocks), block 1's
+// first. Each block's preload gate then waits for whatever is still
+// missing. A shortened dev run downloads only what its blocks show.
 // ---------------------------------------------------------------------------
-function _buildBackgroundPreload(setCode) {
+function _buildBackgroundPreload(positions) {
   return {
     type: jsPsychCallFunction,
     func: function () {
       try {
         var urls = [];
         if (CONFIG.blocks.practice || CONFIG.blocks.main) {
-          urls = urls.concat(Loader.preloadURLs());
-        }
-        if (Loader.hasGrid()) {
-          ['episode', 'normal'].forEach(function (b) {
-            if (!CONFIG.blocks['grid_' + b]) return;
-            Loader.gridScreens(Loader.gridSceneSet(b, setCode)).forEach(function (s) {
-              s.rows.forEach(function (r) {
-                r.images.forEach(function (p) { urls.push(Loader.gridImageURL(p)); });
-              });
+          var L = Loader.limits();
+          if (L.max_trials > 0 || L.max_practice > 0) {
+            positions.forEach(function (p) {
+              urls = urls.concat(Loader.blockImageURLs(Loader.block(p)));
             });
-          });
+          } else {
+            urls = Loader.preloadURLs();
+          }
         }
         if (urls.length) jsPsych.pluginAPI.preloadImages(urls);
         if (CONFIG.debug) {
@@ -435,6 +422,14 @@ function _buildBackgroundPreload(setCode) {
       }
     },
   };
+}
+
+// Which block positions run. Always [1, 2] on index.html; dev.html may
+// run one alone (validate.js refuses anything else on index.html).
+function _positions() {
+  if (!window.DEV_MODE) return [1, 2];
+  var p = (CONFIG.blocks && CONFIG.blocks.positions) || [1, 2];
+  return [1, 2].filter(function (x) { return p.indexOf(x) !== -1; });
 }
 
 // ---------------------------------------------------------------------------
@@ -460,25 +455,40 @@ function runExperiment() {
     }
   }, false);
 
-  // No valid group in the link: do not start.
+  // No valid group or slot in the link: do not start.
   if (!Loader.group()) {
-    _runIncompleteLink();
+    _runIncompleteLink('?group= is missing or invalid (expected one of ' +
+                       CONFIG.groups.join(', ') + ')');
+    return;
+  }
+  if (!Loader.slot()) {
+    _runIncompleteLink('?slot= is missing or not a whole number of 1 or more');
+    return;
+  }
+  if (!Loader.assignment()) {
+    _runIncompleteLink('no assignment row for group ' + Loader.group() +
+                       ', slot ' + Loader.slot());
     return;
   }
 
-  var setCode = _drawSetCode();
+  var positions = _positions();
+  var lim = Loader.limits();
+  var shortened = (lim.max_trials > 0 || lim.max_practice > 0);
 
   // Session properties, stamped first so they reach every row (jsPsych's
   // addProperties also covers rows recorded later).
   timeline.push({
     type: jsPsychCallFunction,
     func: function () {
-      Record.stampSessionStart(jsPsych, setCode);
-      // Mark anything started from dev.html, or run with a trial limit, so
-      // it can never be mistaken for a real session.
+      Record.stampSessionStart(jsPsych);
+      // Mark anything started from dev.html, or shortened, so it can never
+      // be mistaken for a real session.
       jsPsych.data.addProperties({
-        is_dev: !!window.DEV_MODE ||
-                (CONFIG.limits && CONFIG.limits.max_trials > 0),
+        is_dev:       !!window.DEV_MODE || shortened,
+        shortened:    shortened,
+        shortened_to: shortened ? (lim.max_trials || null) : null,
+        shortened_practice_to: shortened ? (lim.max_practice || null) : null,
+        positions_run: positions.join(','),
       });
     },
   });
@@ -507,8 +517,8 @@ function runExperiment() {
   });
 
   // Start downloading the stimuli in the background, early, so they are
-  // usually cached by the time the practice and the grid blocks need them.
-  timeline.push(_buildBackgroundPreload(setCode));
+  // usually cached by the time each block needs them.
+  timeline.push(_buildBackgroundPreload(positions));
 
   // 4-5. Display calibration. Order matters: brightness first, because the
   // gamma match is judged by eye and a dimmed screen would bias it.
@@ -519,40 +529,38 @@ function runExperiment() {
     timeline = timeline.concat(GammaCalibration.getNodes(jsPsych));
   }
 
-  // 6. Anchoring: the episode (participants) or the imagined experience
-  // (controls) that every later judgment is about.
-  if (CONFIG.blocks.anchoring) {
-    timeline = timeline.concat(AnchoringPhase.buildNodes(jsPsych));
+  // 6. Episode selection: the identifying words and recall questions for
+  // each recalled episode, and (controls) the description of derealization
+  // for the expectation block.
+  if (CONFIG.blocks.episodes) {
+    timeline = timeline.concat(EpisodesPhase.buildNodes(jsPsych));
   }
 
-  // 7-8. Practice and the pair trials.
-  if (CONFIG.blocks.mock) {
-    timeline = timeline.concat(MockPhase.buildNodes(jsPsych));
-  } else {
-    timeline = timeline.concat(PairsPhase.buildNodes(jsPsych));
+  // 7-9. Block 1, the rest, block 2.
+  positions.forEach(function (p, i) {
+    if (i > 0 && CONFIG.blocks.rest) {
+      timeline = timeline.concat(RestPhase.buildNodes(jsPsych));
+    }
+    var b = Loader.block(p);
+    timeline = timeline.concat(
+      PairsPhase.buildBlockNodes(jsPsych, b, EpisodesPhase.reinstateNodes(jsPsych, b)));
+  });
+  // A rest-only dev run (no block positions, rest on).
+  if (!positions.length && CONFIG.blocks.rest) {
+    timeline = timeline.concat(RestPhase.buildNodes(jsPsych));
   }
 
-  // 9. Episode grid block.
-  if (CONFIG.blocks.grid_episode) {
-    timeline = timeline.concat(GridPhase.buildNodes(jsPsych, 'episode', setCode));
-  }
-
-  // 10. Word ratings — after the image task and the episode grid.
+  // 10. Word ratings, once, after block 2.
   if (CONFIG.blocks.words) {
     timeline = timeline.concat(WordsPhase.buildNodes(jsPsych));
   }
 
-  // 11. Normal-appearance grid block.
-  if (CONFIG.blocks.grid_normal) {
-    timeline = timeline.concat(GridPhase.buildNodes(jsPsych, 'normal', setCode));
-  }
-
-  // 12. State items (optional block).
+  // 11. State items.
   if (CONFIG.blocks.state) {
     timeline = timeline.concat(StatePhase.buildNodes(jsPsych));
   }
 
-  // 13-14. Save and completion.
+  // 12-13. Save and completion.
   timeline = timeline.concat(_buildSaveNodes());
   timeline.push(_buildCompletionNode());
 

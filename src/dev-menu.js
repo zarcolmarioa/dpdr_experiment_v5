@@ -4,48 +4,55 @@
  * WHY THIS EXISTS
  * ---------------
  * Testing the last screen of the study normally means sitting through
- * consent, full screen, ID entry, calibration, a ~150 MB preload, 211 pair
- * trials and two grid blocks. Twenty-five minutes to check one thing,
- * which means it does not get checked. This makes any single block
- * reachable in a few seconds.
+ * consent, full screen, ID entry, calibration, the episode screens, two
+ * blocks of 200 trials and a rest. Any single part is reachable from here
+ * in a few seconds.
  *
  * It is loaded ONLY by dev.html. index.html — what participants open —
  * does not include it, so there is no way for a participant to reach it.
  *
- * Every session started here is stamped `is_dev = true` on every row, so a
+ * Every session started here is stamped `is_dev = true` on every row, and
+ * a shortened one also `shortened = true` and `shortened_to = N`, so a
  * test session can never be mistaken for data even if it uploads.
  *
- * GROUP. The group comes from ?group= exactly as on index.html. The chips
- * below set it; until one is chosen the presets are disabled. ?set_code=
- * (0 or 1) fixes the grid set swap — dev.html only.
+ * GROUP AND SLOT come from ?group= and ?slot= exactly as on index.html;
+ * the chips below set them. Until both are valid the presets are
+ * disabled. The slot decides the episode order, the lists and the practice
+ * files (assignment.json), shown in the table.
  *
- * Presets set CONFIG.blocks, CONFIG.calibration and CONFIG.limits, then
- * hand control back to main.js, which builds the timeline as usual. Nothing
- * here duplicates the experiment logic — a block tested from this menu is
- * the same code the participant runs. The custom section lists EVERY block
- * switch in CONFIG.blocks and CONFIG.calibration.
+ * Presets set CONFIG.blocks (including blocks.positions, which block
+ * positions run), CONFIG.calibration and CONFIG.limits, then hand control
+ * back to main.js, which builds the timeline as usual. Nothing here
+ * duplicates the experiment logic — a block tested from this menu is the
+ * same code the participant runs. A jump that skips the episode screens
+ * shows a marked dev value in place of the participant's words.
+ *
+ * SHORTENED RUNS (CONFIG.limits.max_trials, per block) are available
+ * only here: Loader ignores the limits outside dev.html, and validate.js
+ * refuses to start index.html while they are set.
  * ========================================================================= */
 
 var DevMenu = (function () {
 
   // The switches as config.js ships them, captured before any preset
-  // changes CONFIG — used as the defaults of the custom section.
+  // changes CONFIG — the defaults of the custom section.
   var BLOCK_DEFAULTS = JSON.parse(JSON.stringify(CONFIG.blocks));
+  var BLOCK_SWITCHES = Object.keys(BLOCK_DEFAULTS).filter(function (k) {
+    return typeof BLOCK_DEFAULTS[k] === 'boolean';
+  });
   var CALIB_KEYS     = ['fullscreen', 'screen_check', 'brightness', 'gamma'];
   var CALIB_DEFAULTS = {};
   CALIB_KEYS.forEach(function (k) { CALIB_DEFAULTS[k] = CONFIG.calibration[k]; });
-  var ANCHOR_Q_DEFAULTS = JSON.parse(JSON.stringify(
-    (CONFIG.anchoring && CONFIG.anchoring.questions) || {}));
 
-  // All block switches off, then the listed ones on. Calibration likewise.
-  function _only(blocksOn, calibOn) {
+  var SHORT_N   = 12;   // main trials per block in the shortened presets
+  var SLOT_CHIPS = [1, 2, 37, 64, 65, 130];
+
+  // All block switches off, then the listed ones on; positions as given.
+  // Calibration likewise.
+  function _only(blocksOn, calibOn, positions) {
     var blocks = {};
-    Object.keys(BLOCK_DEFAULTS).forEach(function (k) {
-      blocks[k] = (blocksOn.indexOf(k) !== -1);
-    });
-    // The "None of these" follow-up is a sub-switch of the episode grid;
-    // keep it as shipped whenever the episode grid runs.
-    if (blocks.grid_episode) blocks.grid_none_followup = BLOCK_DEFAULTS.grid_none_followup;
+    BLOCK_SWITCHES.forEach(function (k) { blocks[k] = (blocksOn.indexOf(k) !== -1); });
+    blocks.positions = positions || [];
     var calibration = {};
     CALIB_KEYS.forEach(function (k) { calibration[k] = (calibOn.indexOf(k) !== -1); });
     return { blocks: blocks, calibration: calibration };
@@ -60,6 +67,8 @@ var DevMenu = (function () {
   }
 
   var SCREEN = ['fullscreen', 'screen_check'];
+  var BLOCK  = ['practice', 'main'];
+  var NO_LIMITS = { max_trials: 0, max_practice: 0 };
 
   // The platform an upload test uses: this page's own, except that on your
   // computer (where 'auto' means no upload) it uploads to DataPipe.
@@ -67,35 +76,63 @@ var DevMenu = (function () {
     return (Platform.name() === 'local') ? 'github' : Platform.name();
   }
 
+  // The first catch trial of block 1's list for this slot (for the catch
+  // preset), or 40.
+  function _firstCatch() {
+    var b = Loader.block(1);
+    if (!b) return 40;
+    for (var i = 0; i < b.rows.length; i++) {
+      if (b.rows[i].trial_type === 'catch') return b.rows[i].trial;
+    }
+    return 40;
+  }
+
   // -----------------------------------------------------------------------
   // Presets. Each returns the overrides to apply.
   //
   // `platform` is forced to 'local' on every preset except the upload test,
-  // so routine dev runs (including a full timed run) do not fill the OSF
-  // component with junk. Use the custom section to upload anything else.
+  // so routine dev runs do not fill the data store with junk.
   // -----------------------------------------------------------------------
   var PRESETS = [
     {
       id: 'full',
       label: 'Full session (local)',
-      note: 'Exactly what a participant gets, ~25 minutes; the CSV downloads ' +
-            'instead of uploading. Use this for the timed run.',
-      apply: function () { return { platform: 'local' }; },
+      note: 'Exactly what a participant gets: both blocks of 200 trials and ' +
+            'the 1-minute rest; the CSV downloads instead of uploading.',
+      apply: function () {
+        return { platform: 'local', limits: NO_LIMITS,
+                 blocks: JSON.parse(JSON.stringify(BLOCK_DEFAULTS)) };
+      },
+    },
+    {
+      id: 'short',
+      label: 'Shortened session &mdash; first ' + SHORT_N + ' trials per block',
+      note: 'Every step of a real session (episodes, both blocks with practice, ' +
+            'the rest, words, state), each block cut to its first ' + SHORT_N +
+            ' trials. Calibration and consent skipped. Rows are marked ' +
+            'shortened = true. The CSV downloads.',
+      apply: function () {
+        return _merge(_only(['episodes', 'practice', 'main', 'rest', 'words', 'state'],
+                            SCREEN, [1, 2]),
+                      { limits: { max_trials: SHORT_N, max_practice: 0 },
+                        platform: 'local' });
+      },
     },
     {
       id: 'consent',
       label: 'Consent screen only',
       note: 'Agree or decline. Declining shows the thank-you screen and stops.',
       apply: function () {
-        return _merge(_only(['consent'], []), { platform: 'local' });
+        return _merge(_only(['consent'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
       id: 'screen',
       label: 'Full screen, window check &amp; size readout',
-      note: 'Resize the window to see the hard stop. No trials, no preload.',
+      note: 'Resize the window to see the hard stop. The check measures both ' +
+            'of the group\'s questions. No trials, no preload.',
       apply: function () {
-        return _merge(_only(['size_check'], SCREEN), { platform: 'local' });
+        return _merge(_only(['size_check'], SCREEN, []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
@@ -104,62 +141,69 @@ var DevMenu = (function () {
       note: 'Brightness (with the viewing-conditions note) and the 3&times; ' +
             'gamma match. ~3 minutes.',
       apply: function () {
-        return _merge(_only([], SCREEN.concat(['brightness', 'gamma'])),
-                      { platform: 'local' });
+        return _merge(_only([], SCREEN.concat(['brightness', 'gamma']), []),
+                      { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
-      id: 'anchoring',
-      label: 'Anchoring + practice',
-      note: 'The anchoring screen for the chosen group, then the 6 practice trials.',
+      id: 'episodes',
+      label: 'Episode screens only',
+      note: 'The two episode screens for the chosen group: identifying words ' +
+            'and the five recall questions (Continue disabled until all are ' +
+            'answered).',
       apply: function () {
-        return _merge(_only(['anchoring', 'practice'], SCREEN), { platform: 'local' });
+        return _merge(_only(['episodes'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
-      id: 'main_short',
-      label: 'Pair trials — first 10',
-      note: 'Skips practice. Preloads only the images those trials need.',
+      id: 'block1',
+      label: 'Episodes + block 1 (first ' + SHORT_N + ' trials)',
+      note: 'The episode screens, then block 1: reinstatement, practice with ' +
+            'feedback, the first ' + SHORT_N + ' trials.',
       apply: function () {
-        return _merge(_only(['main'], SCREEN), {
-          limits: { max_trials: 10, max_practice: 0 }, platform: 'local',
+        return _merge(_only(['episodes'].concat(BLOCK), SCREEN, [1]), {
+          limits: { max_trials: SHORT_N, max_practice: 0 }, platform: 'local',
         });
       },
     },
     {
-      id: 'catch',
-      label: 'Catch trials',
-      note: 'Runs far enough into the pair trials to reach the first catch ' +
-            'trial (list trial 23).',
+      id: 'block2',
+      label: 'Jump to block 2 (first ' + SHORT_N + ' trials)',
+      note: 'Block 2 alone: reinstatement (with a dev value for the words), ' +
+            'the practice intro saying the question has changed, practice ' +
+            'with feedback, the first ' + SHORT_N + ' trials.',
       apply: function () {
-        return _merge(_only(['main'], SCREEN), {
-          limits: { max_trials: 20, max_practice: 0 }, platform: 'local',
+        return _merge(_only(BLOCK, SCREEN, [2]), {
+          limits: { max_trials: SHORT_N, max_practice: 0 }, platform: 'local',
         });
       },
     },
     {
-      id: 'grid_episode',
-      label: 'Episode grid block only',
-      note: 'Full screen, then the 4 episode screens, with "None of these" ' +
-            'and the free-text box.',
+      id: 'rest',
+      label: 'Jump to the rest',
+      note: 'The 1-minute rest between the blocks: countdown, then Continue.',
       apply: function () {
-        return _merge(_only(['grid_episode'], SCREEN), { platform: 'local' });
+        return _merge(_only(['rest'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
       id: 'words',
-      label: 'Word ratings only',
-      note: 'The 10 words, 0&ndash;6, wording for the chosen group.',
+      label: 'Jump to the word ratings',
+      note: 'The 10 words, 0&ndash;6, wording for the chosen group (a dev value ' +
+            'for the participant\'s words).',
       apply: function () {
-        return _merge(_only(['words'], []), { platform: 'local' });
+        return _merge(_only(['words'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
-      id: 'grid_normal',
-      label: 'Normal-appearance grid block only',
-      note: 'Full screen, then the 4 normal screens. No "None of these".',
+      id: 'catch',
+      label: 'Catch trial (block 1)',
+      note: 'Block 1 without practice, up to and including its first catch ' +
+            'trial (this slot\'s list).',
       apply: function () {
-        return _merge(_only(['grid_normal'], SCREEN), { platform: 'local' });
+        return _merge(_only(['main'], SCREEN, [1]), {
+          limits: { max_trials: _firstCatch(), max_practice: 0 }, platform: 'local',
+        });
       },
     },
     {
@@ -167,29 +211,21 @@ var DevMenu = (function () {
       label: 'State items only',
       note: 'The four state items, 0&ndash;6 (placeholder wording until pasted in).',
       apply: function () {
-        return _merge(_only(['state'], []), { platform: 'local' });
+        return _merge(_only(['state'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
       id: 'save_test',
-      label: 'Upload test — 3 trials + both grid blocks',
-      note: 'Three pair trials, the two grid blocks, then saves as this ' +
-            'platform does: DataPipe/OSF on GitHub Pages and on your computer, ' +
-            'Pavlovia on Pavlovia. Use to check the save path.',
+      label: 'Upload test &mdash; 3 trials per block',
+      note: 'Both blocks, 3 trials each, no practice, no rest, then saves as ' +
+            'this platform does: DataPipe on GitHub Pages and on your ' +
+            'computer, Pavlovia on Pavlovia. Use to check the save path.',
       upload: true,
       apply: function () {
-        return _merge(_only(['main', 'grid_episode', 'grid_normal'], SCREEN), {
+        return _merge(_only(['main'], SCREEN, [1, 2]), {
           limits: { max_trials: 3, max_practice: 0 },
           platform: _uploadPlatform(),
         });
-      },
-    },
-    {
-      id: 'mock',
-      label: 'Mock trials (no images)',
-      note: 'Six coloured placeholders. Works without any stimulus files.',
-      apply: function () {
-        return _merge(_only(['mock'], []), { platform: 'local' });
       },
     },
   ];
@@ -218,12 +254,12 @@ var DevMenu = (function () {
 
   // -----------------------------------------------------------------------
   // Render the menu. `onStart` is called once a preset is chosen.
-  // `summary` is the validation summary, shown so the loaded data is
-  // visible before anything runs.
   // -----------------------------------------------------------------------
   function show(summary, onStart) {
     var group = Loader.group();
-    var setCodeParam = new URLSearchParams(window.location.search).get('set_code');
+    var slot  = Loader.slot();
+    var a     = Loader.assignment();
+    var ready = !!(group && slot && a);
 
     var html =
       '<div class="dev-menu">' +
@@ -233,25 +269,35 @@ var DevMenu = (function () {
 
     // --- Current state ---------------------------------------------------
     html += '<div class="dev-state"><table>';
-    html += '<tr><th>stimulus set</th><td><code>' + _esc(summary.stimulus_set) + '</code></td></tr>';
-    html += '<tr><th>trials / analysed</th><td>' + summary.trials + ' / ' + summary.analysed + '</td></tr>';
-    html += '<tr><th>pair images</th><td>' + summary.images + '</td></tr>';
-    html += '<tr><th>scenes</th><td>' + summary.scenes + '</td></tr>';
-    html += '<tr><th>grid</th><td>' + (summary.grid_version
-              ? _esc(summary.grid_version) + ', ' + summary.grid_screens +
-                ' screens, ' + summary.grid_images + ' images'
-              : 'not loaded') + '</td></tr>';
+    html += '<tr><th>package</th><td><code>' + _esc(summary.stimulus_set) + '</code> (' +
+            _esc(summary.design_version) + '), ' + summary.lists + ' lists, ' +
+            summary.images + ' images</td></tr>';
+    html += '<tr><th>per block</th><td>' + summary.main_per_block + ' main trials (' +
+            summary.analysed_per_block + ' analysed); practice ' +
+            summary.practice.join(' / ') + ' trials, feedback ' +
+            summary.practice_feedback.join(' / ') + ' (config.js overrides ' +
+            'design.json)</td></tr>';
     html += '<tr><th>language</th><td><code>' + _esc(summary.language) + '</code></td></tr>';
     html += '<tr><th>group</th><td>' + (group ? '<code>' + _esc(group) + '</code>'
               : '<b class="dev-missing">none &mdash; choose one below</b>') + '</td></tr>';
+    html += '<tr><th>slot</th><td>' + (slot
+              ? '<code>' + slot + '</code> &rarr; assignment row ' + summary.assignment_row
+              : '<b class="dev-missing">none &mdash; choose one below</b>') + '</td></tr>';
+    if (a) {
+      html += '<tr><th>blocks</th><td>' + a.blocks.map(function (b) {
+        return b.position + ': <b>' + _esc(b.episode) + '</b>, set ' + _esc(b.set) +
+               ', list <code>' + _esc(b.list) + '</code>, <code>' +
+               _esc(b.practice) + '</code>';
+      }).join('<br>') + '<br><span class="dev-preset-note">block_order ' + a.block_order +
+              ', set_mapping ' + a.set_mapping + ', order ' + a.order + '</span></td></tr>';
+    }
     html += '<tr><th>interview_date</th><td>' + (summary.interview_date
               ? '<code>' + _esc(summary.interview_date) + '</code>' : '(none)') + '</td></tr>';
-    html += '<tr><th>set_code</th><td>' + ((setCodeParam === '0' || setCodeParam === '1')
-              ? '<code>' + setCodeParam + '</code> (fixed)' : 'random') + '</td></tr>';
     html += '<tr><th>platform</th><td><code>' + _esc(Platform.name()) + '</code>' +
             (CONFIG.platform === 'auto' ? ' (auto, from this address)' : ' (set in config.js)') +
             ' &mdash; presets save locally; the upload test saves via <code>' +
-            _esc(_uploadPlatform()) + '</code></td></tr>';
+            _esc(_uploadPlatform()) + '</code> (DataPipe: <code>' +
+            _esc(CONFIG.datapipe.experiment_id) + '</code>, a TEST experiment)</td></tr>';
     html += '<tr><th>libraries</th><td><code>' + _esc(Platform.libraries()) + '</code>' +
             (CONFIG.libraries !== Platform.libraries()
               ? ' (config says <code>' + _esc(CONFIG.libraries) + '</code>, only on Pavlovia)' : '') +
@@ -268,35 +314,31 @@ var DevMenu = (function () {
       html += '<a class="dev-chip' + (g === group ? ' on' : '') +
               '" href="' + _link({ group: g }) + '">' + _esc(g) + '</a>';
     });
+    html += '<span>slot:</span>';
+    SLOT_CHIPS.forEach(function (n) {
+      html += '<a class="dev-chip' + (n === slot ? ' on' : '') +
+              '" href="' + _link({ slot: n }) + '">' + n + '</a>';
+    });
+    html += '<input id="dev-slot" type="number" min="1" style="width:5em" value="' +
+            (slot || '') + '"><button id="dev-slot-go">set</button>';
     html += '<span>language:</span>';
     ['en', 'ja'].forEach(function (l) {
       html += '<a class="dev-chip' + (l === summary.language ? ' on' : '') +
               '" href="' + _link({ lang: l }) + '">' + l + '</a>';
     });
-    html += '<span>set_code:</span>';
-    [['random', null], ['0', '0'], ['1', '1']].forEach(function (c) {
-      var on = (c[1] === null) ? !(setCodeParam === '0' || setCodeParam === '1')
-                               : setCodeParam === c[1];
-      html += '<a class="dev-chip' + (on ? ' on' : '') +
-              '" href="' + _link({ set_code: c[1] }) + '">' + c[0] + '</a>';
-    });
-    html += '<span>set:</span>';
-    (CONFIG.data.available_sets || []).forEach(function (s) {
-      html += '<a class="dev-chip' + (s === summary.stimulus_set ? ' on' : '') +
-              '" href="' + _link({ set: s }) + '">' + _esc(s) + '</a>';
-    });
     html += '</div>';
 
-    if (!group) {
-      html += '<p class="dev-warning">Choose a group first. index.html refuses ' +
-              'to start without <code>?group=</code>, and so does this menu.</p>';
+    if (!ready) {
+      html += '<p class="dev-warning">Choose a group and a slot first. index.html ' +
+              'refuses to start without <code>?group=</code> and a valid ' +
+              '<code>?slot=</code>, and so does this menu.</p>';
     }
 
     // --- Presets ---------------------------------------------------------
     html += '<div class="dev-presets">';
     PRESETS.forEach(function (p) {
       html += '<button class="dev-preset" data-id="' + p.id + '"' +
-              (group ? '' : ' disabled') + '>' +
+              (ready ? '' : ' disabled') + '>' +
               '<span class="dev-preset-label">' + p.label +
               (p.upload ? ' <span class="dev-upload">uploads</span>' : '') +
               '</span>' +
@@ -307,28 +349,30 @@ var DevMenu = (function () {
 
     // --- Custom: every switch --------------------------------------------
     html += '<div class="dev-custom"><h2>Custom session</h2>' +
-            '<p class="dev-preset-note">Every switch in <code>CONFIG.blocks</code>, ' +
-            '<code>CONFIG.calibration</code> and <code>CONFIG.anchoring.questions</code>, ' +
-            'preset to the values in config.js. Changes here last for this ' +
-            'test session only; to keep them, edit config.js.</p><div class="dev-switches">';
+            '<p class="dev-preset-note">Every switch in <code>CONFIG.blocks</code> ' +
+            'and <code>CONFIG.calibration</code>, preset to the values in ' +
+            'config.js. Changes here last for this test session only.</p>' +
+            '<div class="dev-switches">';
     CALIB_KEYS.forEach(function (k) {
       html += '<label><input type="checkbox" data-calib="' + k + '"' +
               (CALIB_DEFAULTS[k] ? ' checked' : '') + '> calibration.' + k + '</label>';
     });
-    Object.keys(BLOCK_DEFAULTS).forEach(function (k) {
+    BLOCK_SWITCHES.forEach(function (k) {
       html += '<label><input type="checkbox" data-block="' + k + '"' +
               (BLOCK_DEFAULTS[k] ? ' checked' : '') + '> blocks.' + k + '</label>';
     });
-    Object.keys(ANCHOR_Q_DEFAULTS).forEach(function (k) {
-      html += '<label><input type="checkbox" data-anchorq="' + k + '"' +
-              (ANCHOR_Q_DEFAULTS[k] ? ' checked' : '') + '> anchoring.questions.' +
-              k + '</label>';
+    [1, 2].forEach(function (p) {
+      html += '<label><input type="checkbox" data-position="' + p + '"' +
+              ((BLOCK_DEFAULTS.positions || []).indexOf(p) !== -1 ? ' checked' : '') +
+              '> block position ' + p + '</label>';
     });
     html += '</div>' +
-            '<p>Pair trials: <input id="dev-n" type="number" min="0" max="205" ' +
-            'value="0"> (0 = all 205) &nbsp; ' +
-            '<label class="dev-inline"><input id="dev-upload" type="checkbox"> upload (' + _esc(_uploadPlatform()) + ')</label> ' +
-            '<button id="dev-run-custom"' + (group ? '' : ' disabled') + '>Run</button></p>' +
+            '<p>Main trials per block: <input id="dev-n" type="number" min="0" max="200" ' +
+            'value="0"> (0 = all 200) &nbsp; practice per block: <input id="dev-np" ' +
+            'type="number" min="0" max="6" value="0"> (0 = config) &nbsp; ' +
+            '<label class="dev-inline"><input id="dev-upload" type="checkbox"> upload (' +
+            _esc(_uploadPlatform()) + ')</label> ' +
+            '<button id="dev-run-custom"' + (ready ? '' : ' disabled') + '>Run</button></p>' +
             '</div>';
 
     html += '</div>';
@@ -336,10 +380,15 @@ var DevMenu = (function () {
     document.body.innerHTML = html;
 
     // --- Wiring ----------------------------------------------------------
+    document.getElementById('dev-slot-go').addEventListener('click', function () {
+      var v = document.getElementById('dev-slot').value;
+      window.location.href = _link({ slot: v || null });
+    });
+
     var buttons = document.querySelectorAll('.dev-preset');
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].addEventListener('click', function () {
-        if (!Loader.group()) return;
+        if (!ready) return;
         var id = this.getAttribute('data-id');
         for (var j = 0; j < PRESETS.length; j++) {
           if (PRESETS[j].id === id) {
@@ -356,26 +405,26 @@ var DevMenu = (function () {
     }
 
     document.getElementById('dev-run-custom').addEventListener('click', function () {
-      if (!Loader.group()) return;
-      var blocks = {}, calibration = {}, questions = {};
+      if (!ready) return;
+      var blocks = { positions: [] }, calibration = {};
       var boxes = document.querySelectorAll('.dev-switches input');
       for (var b = 0; b < boxes.length; b++) {
         var bk = boxes[b].getAttribute('data-block');
         var ck = boxes[b].getAttribute('data-calib');
-        var qk = boxes[b].getAttribute('data-anchorq');
+        var pk = boxes[b].getAttribute('data-position');
         if (bk) blocks[bk] = boxes[b].checked;
         if (ck) calibration[ck] = boxes[b].checked;
-        if (qk) questions[qk] = boxes[b].checked;
+        if (pk && boxes[b].checked) blocks.positions.push(parseInt(pk, 10));
       }
-      CONFIG.anchoring = CONFIG.anchoring || {};
-      CONFIG.anchoring.questions = questions;
-      var n = parseInt(document.getElementById('dev-n').value, 10) || 0;
+      var n  = parseInt(document.getElementById('dev-n').value, 10) || 0;
+      var np = parseInt(document.getElementById('dev-np').value, 10) || 0;
       var up = document.getElementById('dev-upload').checked;
       _apply({ blocks: blocks, calibration: calibration,
-               limits: { max_trials: n, max_practice: 0 } });
+               limits: { max_trials: n, max_practice: np } });
       CONFIG.platform = up ? _uploadPlatform() : 'local';
       console.log('[Dev] custom — blocks=', blocks, 'calibration=', calibration,
-                  'trials=' + (n || 'all') + ', upload=' + up);
+                  'trials=' + (n || 'all') + ', practice=' + (np || 'config') +
+                  ', upload=' + up);
       document.body.innerHTML = '';
       onStart();
     });

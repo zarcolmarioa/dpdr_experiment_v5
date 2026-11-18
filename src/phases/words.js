@@ -2,11 +2,12 @@
  * phases/words.js — the word rating task.
  *
  * WHERE IT RUNS
- *   After the pair trials and the episode grid block, before the
- *   normal-appearance grid block (see main.js for the session order). The
- *   participant has by then spent the whole image task on one episode (or,
- *   for controls, on imagining derealization), and the ratings ask about
- *   that same episode, in the same terms.
+ *   Once, after block 2 and before the state items (see main.js for the
+ *   session order). Participants rate the derealization episode (the
+ *   episode they described in the interview, named with their own
+ *   identifying words, whichever block came last); controls rate their
+ *   expectation of how the surroundings look to someone experiencing
+ *   derealization.
  *
  * TWO SCREENS
  *   1. Instructions, with a Continue button.
@@ -19,7 +20,9 @@
  *
  * GROUP
  *   The instruction and the one-line question are the only group-dependent
- *   strings (text/<lang>/words.js, keyed participant / control).
+ *   strings (text/<lang>/words.js, keyed participant / control). In the
+ *   participant version, {WORDS} is replaced by the participant's own
+ *   identifying words for the derealization episode.
  *
  * ORDER
  *   The ten words are shown in a random order per participant (Fisher-
@@ -40,6 +43,13 @@ var WordsPhase = (function () {
     return Loader.words();
   }
 
+  // Participants rate the DEREALIZATION episode, whichever block came last;
+  // the instruction names it and shows their own identifying words
+  // ({WORDS}, HTML-escaped). Controls rate their expectation (no {WORDS}).
+  function _fillWords(s) {
+    return String(s).split('{WORDS}').join(EpisodesPhase.wordsHTML('derealization'));
+  }
+
   // Fisher-Yates, so presentation order does not favour the targets.
   function _shuffled(items) {
     var a = items.slice();
@@ -57,8 +67,12 @@ var WordsPhase = (function () {
     var W = words();
     return {
       type: jsPsychHtmlButtonResponse,
-      stimulus: '<div class="card word-intro"><h2>' + W.title + '</h2>' +
-                Loader.byGroup(W.instruction) + '</div>',
+      // A function, so the participant's words (entered on the episode
+      // screens, after this node was built) are filled in when it shows.
+      stimulus: function () {
+        return '<div class="card word-intro"><h2>' + W.title + '</h2>' +
+               _fillWords(Loader.byGroup(W.instruction)) + '</div>';
+      },
       choices: [W.button_begin],
       data: { block: 'word_instructions' },
     };
@@ -87,7 +101,7 @@ var WordsPhase = (function () {
         var display = jsPsych.getDisplayElement();
 
         RatingGrid.render(display, {
-          question:    Loader.byGroup(W.question_short),
+          question:    _fillWords(Loader.byGroup(W.question_short)),
           items:       order,
           anchor_low:  W.anchor_low,
           anchor_high: W.anchor_high,

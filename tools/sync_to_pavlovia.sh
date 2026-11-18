@@ -5,7 +5,7 @@
 #
 #   usage:  tools/sync_to_pavlovia.sh <pavlovia-folder> [<commit or branch>]
 #   e.g.    tools/sync_to_pavlovia.sh ~/pavlovia/dpdr_experiment
-#           tools/sync_to_pavlovia.sh ~/pavlovia/dpdr_experiment v4-study-design
+#           tools/sync_to_pavlovia.sh ~/pavlovia/dpdr_experiment v5b-two-blocks
 #
 # Two folders, never mixed (see SETUP.md §7):
 #   this folder        the GitHub repository (public). Never put results here.
@@ -18,8 +18,8 @@
 #   2. pulls the Pavlovia project first (Pavlovia adds result files as
 #      commits, so a push without this is rejected);
 #   3. exports the chosen commit (default HEAD) of THIS repository — only
-#      committed files, nothing untracked — minus the two old stimulus sets
-#      (lum_p05, contrast_local; not used, ~160 MB);
+#      committed files, nothing untracked — minus the two old v1 stimulus
+#      sets (lum_p05, contrast_local) if a commit still has them;
 #   4. copies it over <pavlovia-folder>, deleting files that no longer
 #      exist here, but NEVER touching: .git/, the results (data/*.csv,
 #      data/*.log), config.json and lib/ (both Pavlovia's own);

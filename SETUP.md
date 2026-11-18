@@ -39,8 +39,8 @@ Copy the printed line into GitHub → Settings → SSH and GPG keys → New SSH 
 
 ## 1. Get the repository
 
-The repository already exists on GitHub and already contains the frozen v4
-stimuli (~150 MB, see §5), so the first clone takes a little while:
+The repository already exists on GitHub and already contains the frozen
+v5b_180 package (~230 MB, see §5), so the first clone takes a little while:
 
 ```bash
 git clone git@github.com:<username>/<repo-name>.git
@@ -80,11 +80,17 @@ The values are already in `config.js`:
 
 ```js
 datapipe: {
-  experiment_id: 'VoYGtg5yKGr2',
-  osf_project:   'tx5h2',
-  osf_component: 'qsv56',
+  experiment_id: 'VoYGtg5yKGr2',  // TEST experiment — replace before data collection
+  zenodo_record: '[Zenodo record — to complete]',
 }
 ```
+
+DataPipe stores each uploaded file on **Zenodo** (the mechanism is the same
+as it was with OSF). **Both experiment IDs in `config.js` (responses and
+contact details) are the test experiments**, kept so the code can be tested
+end to end; their data mix with older test sessions. Before data collection,
+create new DataPipe experiments for v5b, connect each to its Zenodo record,
+and put the new IDs in `config.js` (`README.md`, "Before data collection").
 
 **Before every test round, on the DataPipe dashboard:**
 
@@ -101,12 +107,14 @@ datapipe: {
 
 ### A name collision worth knowing about
 
-jsPsych writes its own `trial_type` column containing the *plugin* name.
-`trial_list.json` also has a `trial_type` column, containing the *design*
-label (`sat_only`, `conflict`, `catch`). Two different things, same name.
+jsPsych writes its own `trial_type` column containing the *plugin* name,
+and overwrites any other value we give that column. The lists also have a
+`trial_type` column, containing the *design* label (`sat_only`, `conflict`,
+`consistency`, `catch`). Two different things, same name.
 
-The experiment renames the design label to **`pair_type`** on output.
-`trial_list.json` is never modified. When analysing, use `pair_type`, and
+The experiment writes the list's label as **`list_trial_type`**, next to
+the list's **`pair_type`** (the type of the image pair). The lists are
+never modified. When analysing, use `list_trial_type` / `pair_type`, and
 ignore `trial_type` — it only tells you which plugin drew the screen.
 
 ---
@@ -116,30 +124,34 @@ ignore `trial_type` — it only tells you which plugin drew the screen.
 Open, replacing the values with your own:
 
 ```
-https://<username>.github.io/<repo-name>/?pid=Z_21121989&group=participant
+https://<username>.github.io/<repo-name>/?pid=Z_21121989&group=participant&slot=1
 ```
 
 `Z_21121989` is the superuser ID. Every row it produces carries
 `is_test = true`, so test sessions can always be filtered out. The `group`
-parameter is **required**: without it the study shows "This link is
-incomplete" and does not start. Repeat with `group=control`.
+and `slot` parameters are **required**: without either the study shows
+"This link is incomplete" and does not start. Repeat with
+`group=control`, and with a few slots (each slot gives a different episode
+order, set mapping and list order — `assignment.json`).
 
 The session runs in this order (both groups):
 
 1. consent → 2. full screen and window check → 3. ID screen →
-4. brightness → 5. gamma matching → 6. anchoring → 7. practice →
-8. 205 pair trials → 9. episode grid block → 10. word ratings →
-11. normal-appearance grid block → 12. state items → 13. save →
-14. completion screen.
+4. brightness → 5. gamma matching → 6. episode selection →
+7. block 1 (reinstatement, 3 practice trials, 200 trials) → 8. 1-minute
+rest → 9. block 2 (as block 1) → 10. word ratings → 11. state items →
+12. save → 13. completion screen.
 
 With `CONFIG.debug` on, the completion screen states whether the upload
 succeeded and shows the raw DataPipe response.
 
-Then confirm the file arrived in OSF component `qsv56`. The DataPipe
-dashboard session counter should also increment.
+Then confirm the file arrived on Zenodo (via the DataPipe experiment). The
+DataPipe dashboard session counter should also increment.
 
-For quick checks of one block, use `dev.html` instead (choose a group
-first): every preset except "Upload test" saves locally.
+For quick checks of one block, use `dev.html` instead (choose a group and
+a slot first): every preset except "Upload test" saves locally. Its
+"Shortened session" preset runs every step with each block cut to its
+first 12 trials.
 
 ### If the upload fails
 
@@ -153,50 +165,46 @@ first): every preset except "Upload test" saves locally.
 ### Testing without uploading
 
 Serve the folder over HTTP on your computer (`python3 -m http.server 8000`,
-then open `http://localhost:8000/?pid=Z_21121989&group=participant`). With
+then open `http://localhost:8000/?pid=Z_21121989&group=participant&slot=1`). With
 `platform: 'auto'` this is `local`: the CSV downloads to your Downloads
 folder and nothing is sent anywhere — except the separate contact file, if
 you type a name or email (see `DATA_DICTIONARY.md` §15). Useful for checking
-the output columns without adding junk to OSF. Or use `dev.html` → "Full
-session (local)".
+the output columns without adding junk to the data store. Or use
+`dev.html` → "Full session (local)".
 
 ---
 
-## 5. The stimulus packages (frozen)
+## 5. The stimulus package (frozen)
 
-The v4 stimuli are already committed:
+The v5b package is already committed:
 
 ```
-data/sets/v4/        pair package: trial_list.json, preload.json, stimuli/ (349 images)
-data/sets/v4/grid/   grid package: grid_trials.json, preload.json, stimuli/ (144 images)
+data/sets/v5b_180/   README.txt, design.json, assignment.json, lists/ (8 lists),
+                     practice/ (block1, block2), items.csv, preload.json,
+                     manifest.csv, stimuli/ (656 images), and a CSV copy of
+                     every JSON
 ```
 
-They are exact copies of the frozen originals archived in
-`drl2drv_updated/data_trials/` (`frozen_trial_list_v4/package/` and
-`grid_block_v4/package/`). **Never edit, re-encode, resize or rename
-anything in these folders.** The experiment reads them as they are; the
-validator refuses to start if their counts or structure differ from the
-registered design.
+It is byte-identical to the registered package (checksums verified when it
+was committed). **Never edit, add, remove, re-encode, resize or rename
+anything in this folder.** The experiment reads it as it is; the validator
+refuses to start if its counts or structure differ from `design.json`.
+Read its `README.txt` for the design.
 
-To re-verify them (for example before launch, on the deployed commit), with
-both repositories checked out side by side:
+To re-check it (for example before launch, on the deployed commit):
 
 ```bash
-ARCHIVE=../drl2drv_updated/data_trials
-
-# Pair package: all 354 checksums must pass.
-grep '  package/' $ARCHIVE/frozen_trial_list_v4/checksums.sha256 \
-  | sed 's#  package/#  #' > /tmp/pair.sha256
-(cd data/sets/v4 && sha256sum -c --quiet /tmp/pair.sha256) && echo "pair package OK"
-
-# Grid package: byte-identical, ignoring the archive's previews/.
-diff -r --exclude=previews $ARCHIVE/grid_block_v4/package data/sets/v4/grid \
-  && echo "grid package OK"
+node tools/check_package.js
 ```
 
-The older sets (`data/sets/lum_p05/`, `data/sets/contrast_local/`) are kept
-on disk for reference but are not in `CONFIG.data.available_sets` and
-cannot be selected.
+This runs the same checks as the browser (`src/validate.js`: every list
+against `design.json`, the catch targets, the practice files, the
+assignment table, the texts in both languages, the settings `index.html`
+would use) and also checks that every image the package names is on disk
+and that every file in `stimuli/` matches its SHA-256 in `manifest.csv`.
+It prints `PASS` or `FAIL` and exits 1 on any error. The placeholder
+warnings (consent, state items, `[TO COMPLETE after pilot]`) remain until
+the approved wording is pasted in.
 
 **One caution.** Git keeps every version of every file permanently, and PNGs
 do not delta-compress. That is one more reason never to touch the package
@@ -210,18 +218,19 @@ deploys normally. That is a difficult failure to diagnose.
 
 ## 6. Participant links
 
-Each participant gets their own link, carrying their ID, their group and,
-for participants, the date of their interview:
+Each participant gets their own link, carrying their ID, their group, a
+**slot** and, for participants, the date of their interview:
 
 ```
-https://<username>.github.io/<repo-name>/?pid=R_9rJJWk01c767jE8&group=participant&idate=2026-11-03
-https://<username>.github.io/<repo-name>/?pid=R_4EWNe48BIB50mVI&group=control
+https://<username>.github.io/<repo-name>/?pid=R_9rJJWk01c767jE8&group=participant&slot=1&idate=2026-11-03
+https://<username>.github.io/<repo-name>/?pid=R_4EWNe48BIB50mVI&group=control&slot=1
 ```
 
 | parameter | required | value |
 |---|---|---|
 | `pid` | recommended. Without it (and with `allow_manual_id` on) the participant must type a valid ID **or** give a name and email address | the participant ID, case-sensitive |
 | `group` | **yes** | `participant` or `control`, exactly. Without it the study does not start |
+| `slot` | **yes** | a whole number, 1 or more. Slot n uses row ((n − 1) mod 64) + 1 of the group's table in `data/sets/v5b_180/assignment.json`. **Hand slots out in sequence per group, starting at 1, and never reuse one.** Without a valid slot the study does not start |
 | `idate` | no | the interview date, `YYYY-MM-DD`. Added by the researcher who schedules the interviews; never asked on screen. An invalid date is recorded empty |
 | `lang` | no | `ja` for Japanese; English otherwise |
 
@@ -232,13 +241,13 @@ that builds the links from a table.
 
 Put the ID in the email body as well as the link:
 
-> Here is your link: https://.../?pid=R_9rJJWk01c767jE8&group=participant&idate=2026-11-03
+> Here is your link: https://.../?pid=R_9rJJWk01c767jE8&group=participant&slot=1&idate=2026-11-03
 >
 > If the link does not work, please reply to this email.
 
-A link without `group` does not start, so any fallback link must carry the
-group. A link with the group but no ID (`https://.../?group=participant`)
-does start: the participant then types their ID, or — if they do not have
+A link without `group` or `slot` does not start, so any fallback link must
+carry both (and its own, unused slot). A link with the group and slot but no
+ID (`https://.../?group=participant&slot=5`) does start: the participant then types their ID, or — if they do not have
 it — gives their name and email address instead (a unique `NOID_DRCHAIN26_…`
 ID is generated, and the contact file is what links the session to them).
 Giving all three is best, and the screen says so.
@@ -246,7 +255,8 @@ Giving all three is best, and the screen says so.
 The IDs are **case-sensitive**. `R_4EWNe48BIB50mVI` and `R_4ewne48bib50mvi`
 are different identifiers, and the experiment will reject the wrong case.
 Before sending, open one participant link and one control link yourself and
-check the anchoring screen shows the right wording.
+check the episode screens show the right wording (controls must never see
+the word "interview").
 
 ---
 
@@ -258,7 +268,7 @@ and saves accordingly:
 
 | Served from | `platform` | Responses saved to | Name and email (if given) |
 |---|---|---|---|
-| `*.github.io` | `github` | DataPipe → OSF `qsv56` | separate file, DataPipe → OSF `qt9x8`, straight away |
+| `*.github.io` | `github` | DataPipe → Zenodo | separate file, separate DataPipe experiment → Zenodo, straight away |
 | `run.pavlovia.org` | `pavlovia` | the Pavlovia project's `data/` folder | in the response file (`contact_name`, `contact_email`), at the end |
 | your computer | `local` | downloaded CSV | separate DataPipe file, as on GitHub |
 
@@ -312,9 +322,10 @@ repository** (`data/` folder). The GitHub repository is public. So:
    git push
    ```
 
-   The first push is ~150 MB (the v4 images). If it fails part-way, run
-   `git config http.postBuffer 524288000` in folder B and push again.
-   The old stimulus sets `lum_p05` and `contrast_local` are not copied.
+   The first push is ~230 MB (the v5b images). If it fails part-way, run
+   `git config http.postBuffer 524288000` in folder B and push again. A
+   Pavlovia project that held the v4 experiment loses `data/sets/v4/` in
+   this sync (it no longer exists here); the results in `data/` are kept.
 
 4. On the Pavlovia experiment page: keep the saving format **CSV** (if
    the page offers a choice), leave **Save incomplete results OFF** (an
@@ -331,11 +342,11 @@ repository** (`data/` folder). The GitHub repository is public. So:
   session, named
 
   ```
-  <project>_<participant_id>_v4_<Japan-time stamp>_SESSION_<date>.csv
+  <project>_<participant_id>_v5b_180_<Japan-time stamp>_SESSION_<date>.csv
   ```
 
   The middle part is the same as the GitHub file name
-  (`<participant_id>_v4_<Japan-time stamp>`). Download them from the
+  (`<participant_id>_v5b_180_<Japan-time stamp>`). Download them from the
   experiment page (**Download results**) or with `git pull` in folder B.
 
 The Pavlovia session is opened only after the consent screen and the window
@@ -345,12 +356,12 @@ opens one (and never sees the browser's "leave this page?" warning).
 ### Links
 
 ```
-https://run.pavlovia.org/<user>/<project>/?pid=R_xxxxxxxxxxxxxxx&group=participant&idate=2026-11-03
-https://run.pavlovia.org/<user>/<project>/?pid=R_xxxxxxxxxxxxxxx&group=control
+https://run.pavlovia.org/<user>/<project>/?pid=R_xxxxxxxxxxxxxxx&group=participant&slot=1&idate=2026-11-03
+https://run.pavlovia.org/<user>/<project>/?pid=R_xxxxxxxxxxxxxxx&group=control&slot=1
 ```
 
 The same parameters as on GitHub (§6). `dev.html` works there too:
-`https://run.pavlovia.org/<user>/<project>/dev.html?group=participant`; its
+`https://run.pavlovia.org/<user>/<project>/dev.html?group=participant&slot=1`; its
 "Upload test" saves to Pavlovia.
 
 ### Updating
@@ -359,7 +370,7 @@ Commit in folder A, then run `tools/sync_to_pavlovia.sh` and push from B
 again. The script pulls B first (Pavlovia's result commits), never touches
 `data/*.csv`, `config.json` or `lib/`, and writes `DEPLOYED_COMMIT.txt`
 — the commit that is live — for the launch checklist. To deploy another
-branch: `tools/sync_to_pavlovia.sh ~/pavlovia/<project> v4-study-design`.
+branch: `tools/sync_to_pavlovia.sh ~/pavlovia/<project> v5b-two-blocks`.
 
 ### If saving fails on Pavlovia
 
@@ -378,10 +389,11 @@ The launch checklist is in `README.md` ("Launch checklist — do not recruit
 unless every item passes"). It is a list of hard gates: do not send a single
 invitation while any item fails. In addition, for deployment:
 
-- [ ] A test session per group with `Z_21121989` appears in OSF component `qsv56`
+- [ ] A test session per group with `Z_21121989` arrives on Zenodo through
+      the (new, v5b) DataPipe experiment
 - [ ] All images load (no grey boxes, no console 404s; `failed_images` is
-      `[]` on the `preload` and both `grid_preload_*` rows)
-- [ ] Participant links generated with the correct IDs, groups and
-      interview dates
+      `[]` on both `preload` rows)
+- [ ] Participant links generated with the correct IDs, groups, slots (in
+      sequence per group, none reused) and interview dates
 - [ ] A full session run start to finish on a small laptop screen (and the
       window check tried on a window that is too small: it must stop)
