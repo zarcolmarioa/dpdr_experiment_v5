@@ -267,7 +267,14 @@ the bottom of the screen), e.g. `Block 1 · 37/200 · sat_only · A016 · A on
 left · colour +1.03 SD, contrast +0.00 SD`. Colour and contrast are the
 list's `pred_sat` and `pred_fog` (positive = image A is the predicted
 choice); consistency rows add `repeat of trial n`, catch rows their target.
-The label is drawn after each screen appears, so it is not recorded in any
+A second line gives each image's levels, read from its file name
+(`<scene>__c<level>__s<level>.png`: `c` contrast, `s` saturation; `0`,
+`p1`–`p3`, `n1`–`n3`) and how far apart they are, e.g. `Left: contrast −2,
+colour +1 · Right: contrast −2, colour −3 · Apart: contrast 0, colour 4
+levels`; an unedited image (`c0`, `s0`) reads `original`. Catch rows show
+no images, so they have only the first line. On `dev.html` the validator
+checks that every image a list or practice file shows follows that name
+pattern. The label is drawn after each screen appears, so it is not recorded in any
 column (including `stimulus`). It never appears on `index.html`, and
 `index.html` refuses to start if `CONFIG.dev.trial_label` is true.
 `node tools/test_trial_label.js` checks all of this in a browser.

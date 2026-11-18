@@ -35,8 +35,11 @@
  * visually and says nothing about why the choice was made.
  *
  * DEV TRIAL LABEL (dev.html only, CONFIG.dev.trial_label): a small label
- * under the images naming the block, trial, type, item, side and the
- * pair's predictor values — see _labelText(). It is added to the page in
+ * under the images. Line 1 names the block, trial, type, item, side and
+ * the pair's predictor values; line 2 (not on catch rows, which show no
+ * images) the contrast and colour levels of each image, read from its
+ * file name, and how many levels apart they are — see _labelLines() and
+ * levelsLine(). It is added to the page in
  * on_load, after jsPsych has drawn the screen, and never to the stimulus
  * HTML, because jsPsych records that HTML in the `stimulus` column.
  * ========================================================================= */
@@ -62,6 +65,54 @@ var PairsPhase = (function () {
     var r = Math.round(v * 100) / 100;
     if (r === 0) r = 0;
     return (r >= 0 ? '+' : '\u2212') + Math.abs(r).toFixed(2);
+  }
+
+  // -----------------------------------------------------------------------
+  // Image levels, from the file name:  <scene>__c<level>__s<level>.png
+  // c = contrast, s = saturation (colour); level 0 = unchanged, p1-p3 =
+  // +1..+3, n1-n3 = -1..-3. validate.js checks (dev.html) that every image
+  // a list or practice file shows follows this pattern.
+  // -----------------------------------------------------------------------
+  var LEVELS_RE = /__c(0|[pn][1-3])__s(0|[pn][1-3])\.png$/;
+
+  function _level(t) {
+    return (t === '0') ? 0 : (t.charAt(0) === 'p' ? 1 : -1) * parseInt(t.charAt(1), 10);
+  }
+
+  // 'stimuli/x__cn2__sp1.png' -> { contrast: -2, colour: 1 }, or null.
+  function imageLevels(path) {
+    var m = LEVELS_RE.exec(String(path || ''));
+    return m ? { contrast: _level(m[1]), colour: _level(m[2]) } : null;
+  }
+
+  function _signed(n) {
+    return n > 0 ? '+' + n : (n < 0 ? '\u2212' + Math.abs(n) : '0');
+  }
+
+  function _side(lv) {
+    if (!lv) return 'levels unknown';
+    if (lv.contrast === 0 && lv.colour === 0) return 'original';
+    return 'contrast ' + _signed(lv.contrast) + ', colour ' + _signed(lv.colour);
+  }
+
+  // Line 2 of the label, e.g.
+  //   Left: contrast −2, colour +1 · Right: contrast −2, colour −3 · Apart: contrast 0, colour 4 levels
+  function levelsLine(row) {
+    var L = imageLevels(row.left_path), R = imageLevels(row.right_path);
+    return 'Left: ' + _side(L) + ' \u00b7 Right: ' + _side(R) + ' \u00b7 Apart: ' +
+           ((L && R) ? 'contrast ' + Math.abs(L.contrast - R.contrast) + ', colour ' +
+                       Math.abs(L.colour - R.colour) + ' levels'
+                     : 'unknown');
+  }
+
+  // The label's lines: line 1 always; line 2 (levels) unless the row is a
+  // catch trial without images.
+  function _labelLines(row, ctx, pos, targetKey) {
+    var lines = [_labelText(row, ctx, pos, targetKey)];
+    if (!(row.trial_type === 'catch' && row.catch_mode === 'no_images')) {
+      lines.push(levelsLine(row));
+    }
+    return lines;
   }
 
   // `pos` = { n, of } — the trial's place in the block (main: the list's
@@ -92,13 +143,18 @@ var PairsPhase = (function () {
   // Add the label to the screen just drawn: under the images when there
   // are any, else at the bottom of the screen (catch trials). textContent,
   // so nothing in it is ever read as HTML.
-  function _showLabel(text) {
-    if (!_labelOn() || !text) return;
+  function _showLabel(lines) {
+    if (!_labelOn() || !lines || !lines.length) return;
     var el = document.createElement('div');
     el.className = 'dev-trial-label';
     el.setAttribute('aria-hidden', 'true');
     var span = document.createElement('span');
-    span.textContent = text;
+    lines.forEach(function (text) {
+      var line = document.createElement('div');
+      line.className = 'dev-label-line';
+      line.textContent = text;
+      span.appendChild(line);
+    });
     el.appendChild(span);
     var row = document.querySelector('.stim-row');
     if (row) {
@@ -164,7 +220,7 @@ var PairsPhase = (function () {
 
   function _catchNodes(row, ctx, targetKey, pos) {
     var html = _catchHTML(targetKey);
-    var label = _labelText(row, ctx, pos, targetKey);
+    var label = _labelLines(row, ctx, pos, targetKey);
     var base = Record.pairTrialData(row, ctx);
     base.catch_target = targetKey;
 
@@ -216,7 +272,7 @@ var PairsPhase = (function () {
   // -----------------------------------------------------------------------
   function _trialNodes(row, ctx, feedback, firstFeedback, pos) {
     var nodes = [];
-    var label = _labelText(row, ctx, pos);
+    var label = _labelLines(row, ctx, pos);
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -429,6 +485,8 @@ var PairsPhase = (function () {
   return {
     buildBlockNodes: buildBlockNodes,
     trialHTML:       trialHTML,
+    imageLevels:     imageLevels,   // dev label; also used by the tests
+    levelsLine:      levelsLine,
     prompt:          prompt,
   };
 })();
