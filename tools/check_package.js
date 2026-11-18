@@ -9,6 +9,8 @@
  * the settings index.html would use), and adds the checks the browser
  * cannot make:
  *
+ *   - the image names follow <scene>__c<level>__s<level>.png (a dev.html
+ *     check, for the trial label; validate.js checkImageNames);
  *   - every image named by any list row (catch rows included) or practice
  *     row, and every path in preload.json, exists on disk;
  *   - every file in stimuli/ is listed in manifest.csv with the same
@@ -76,6 +78,7 @@ add(Validate.checkText({
   WORDS_EN: ctx.WORDS_EN, WORDS_JA: ctx.WORDS_JA,
 }, CONFIG, pkg.design, { production: false, contactStorage: 'datapipe' }), 'text');
 add(Validate.checkConfig(CONFIG, pkg, { devMode: false }), 'config');
+add(Validate.checkImageNames(pkg), 'image names');   // dev check (the trial label)
 
 // --- Files on disk -------------------------------------------------------------
 const named = new Set();
