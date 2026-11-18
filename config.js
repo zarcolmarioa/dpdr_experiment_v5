@@ -435,6 +435,27 @@ var CONFIG = {
   },
 
   // -----------------------------------------------------------------------
+  // Developer trial label. DEV.HTML ONLY — leave false here.
+  //
+  // When on, every practice and main trial shows a small label under the
+  // images (catch trials: at the bottom of the screen), e.g.
+  //   Block 1 · 37/200 · sat_only · A016 · A on left · colour +1.03 SD, contrast +0.00 SD
+  // colour / contrast are the list's pred_sat / pred_fog: the pair's
+  // differences in SD units, signed so that positive = image A is the
+  // predicted choice. Consistency rows add "repeat of trial n", catch rows
+  // their target.
+  //
+  // dev.html switches it on with the "Trial label" box in the dev menu (on
+  // by default there). It is drawn into the page after each screen appears,
+  // so it is never part of the recorded `stimulus` HTML or any other column.
+  // It is shown only when dev.html is running (window.DEV_MODE), whatever
+  // this says, and validate.js refuses to start index.html with it true.
+  // -----------------------------------------------------------------------
+  dev: {
+    trial_label: false,
+  },
+
+  // -----------------------------------------------------------------------
   // Limits. DEV.HTML ONLY — leave at 0.
   //
   // max_trials shortens EACH block to its first N main trials, and
