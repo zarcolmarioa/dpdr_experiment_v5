@@ -33,6 +33,12 @@
  *
  * PRACTICE feedback outlines the chosen image. It confirms the key mapping
  * visually and says nothing about why the choice was made.
+ *
+ * DEV TRIAL LABEL (dev.html only, CONFIG.dev.trial_label): a small label
+ * under the images naming the block, trial, type, item, side and the
+ * pair's predictor values — see _labelText(). It is added to the page in
+ * on_load, after jsPsych has drawn the screen, and never to the stimulus
+ * HTML, because jsPsych records that HTML in the `stimulus` column.
  * ========================================================================= */
 
 var PairsPhase = (function () {
@@ -40,6 +46,74 @@ var PairsPhase = (function () {
   // Rendered size of the panels on the most recent trial, captured in
   // on_load. Confirms per trial that the images displayed at image_px.
   var _lastPanel = null;
+
+  // -----------------------------------------------------------------------
+  // Developer trial label. Only on dev.html (window.DEV_MODE) with
+  // CONFIG.dev.trial_label on; validate.js refuses index.html with it on,
+  // and this check keeps it off index.html regardless.
+  // -----------------------------------------------------------------------
+  function _labelOn() {
+    return !!(window.DEV_MODE && CONFIG.dev && CONFIG.dev.trial_label);
+  }
+
+  // +1.03 / -1.71 / +0.00 (never "-0.00").
+  function _sd(v) {
+    if (v === null || v === undefined || isNaN(v)) return 'n/a';
+    var r = Math.round(v * 100) / 100;
+    if (r === 0) r = 0;
+    return (r >= 0 ? '+' : '\u2212') + Math.abs(r).toFixed(2);
+  }
+
+  // `pos` = { n, of } — the trial's place in the block (main: the list's
+  // trial number of its 200; practice: n of the block's practice trials).
+  function _labelText(row, ctx, pos, targetKey) {
+    var parts = ['Block ' + ctx.position];
+    if (ctx.phase === 'practice') {
+      parts.push('practice ' + pos.n + '/' + pos.of);
+      parts.push(row.pair_type);
+    } else {
+      parts.push(pos.n + '/' + pos.of);
+      parts.push(row.trial_type +
+                 (row.pair_type && row.pair_type !== row.trial_type
+                   ? ' (' + row.pair_type + ')' : ''));
+    }
+    parts.push(row.item_id);
+    parts.push('A on ' + (row.a_is_left ? 'left' : 'right'));
+    parts.push('colour ' + _sd(row.pred_sat) + ' SD, contrast ' + _sd(row.pred_fog) + ' SD');
+    if (row.trial_type === 'consistency') parts.push('repeat of trial ' + row.repeat_of);
+    if (row.trial_type === 'catch') {
+      var up = String(targetKey).toLowerCase() === 'arrowup';
+      parts.push('target ' + (up ? '\u2191 ' : '\u2193 ') + targetKey +
+                 (row.catch_mode === 'no_images' ? ' (images not shown)' : ''));
+    }
+    return parts.join(' \u00b7 ');
+  }
+
+  // Add the label to the screen just drawn: under the images when there
+  // are any, else at the bottom of the screen (catch trials). textContent,
+  // so nothing in it is ever read as HTML.
+  function _showLabel(text) {
+    if (!_labelOn() || !text) return;
+    var el = document.createElement('div');
+    el.className = 'dev-trial-label';
+    el.setAttribute('aria-hidden', 'true');
+    var span = document.createElement('span');
+    span.textContent = text;
+    el.appendChild(span);
+    var row = document.querySelector('.stim-row');
+    if (row) {
+      row.appendChild(el);
+    } else {
+      el.className += ' dev-trial-label-fixed';
+      document.body.appendChild(el);
+    }
+  }
+
+  // Remove a fixed-position label left by a catch screen.
+  function _clearLabel() {
+    var old = document.querySelectorAll('.dev-trial-label-fixed');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+  }
 
   // -----------------------------------------------------------------------
   // The question above the images, for an episode.
@@ -88,8 +162,9 @@ var PairsPhase = (function () {
     );
   }
 
-  function _catchNodes(row, ctx, targetKey) {
+  function _catchNodes(row, ctx, targetKey, pos) {
     var html = _catchHTML(targetKey);
+    var label = _labelText(row, ctx, pos, targetKey);
     var base = Record.pairTrialData(row, ctx);
     base.catch_target = targetKey;
 
@@ -101,6 +176,8 @@ var PairsPhase = (function () {
         choices: 'NO_KEYS',
         trial_duration: CONFIG.catch_trials.lockout_ms,
         data: { block: 'catch_lockout', block_position: ctx.position },
+        on_load:   function () { _showLabel(label); },
+        on_finish: function () { _clearLabel(); },
       },
       // 2. Live — any key ends the trial and is scored.
       {
@@ -108,8 +185,9 @@ var PairsPhase = (function () {
         stimulus: html,
         choices: 'ALL_KEYS',
         data: base,
-        on_load: function () { Record.markTaskStart(); },
+        on_load: function () { Record.markTaskStart(); _showLabel(label); },
         on_finish: function (data) {
+          _clearLabel();
           Record.finishCatchTrial(data);
           Record.markTaskEnd();
         },
@@ -136,8 +214,9 @@ var PairsPhase = (function () {
   // afterwards (practice); `firstFeedback` = also show the one-line
   // explanation (first practice trial of the block).
   // -----------------------------------------------------------------------
-  function _trialNodes(row, ctx, feedback, firstFeedback) {
+  function _trialNodes(row, ctx, feedback, firstFeedback, pos) {
     var nodes = [];
+    var label = _labelText(row, ctx, pos);
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -163,6 +242,7 @@ var PairsPhase = (function () {
           var r = el.getBoundingClientRect();
           _lastPanel = Math.round(r.width) + 'x' + Math.round(r.height);
         }
+        _showLabel(label);
       },
       on_finish: function (d) {
         d.panel_rendered_px = _lastPanel;
@@ -171,7 +251,7 @@ var PairsPhase = (function () {
       },
     });
 
-    if (feedback) nodes.push(_feedbackNode(row, ctx, firstFeedback));
+    if (feedback) nodes.push(_feedbackNode(row, ctx, firstFeedback, label));
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -189,7 +269,7 @@ var PairsPhase = (function () {
   // outlined, for a fixed duration. It says nothing about WHY the choice
   // was made: the outline teaches the key mapping and nothing else.
   // -----------------------------------------------------------------------
-  function _feedbackNode(row, ctx, isFirst) {
+  function _feedbackNode(row, ctx, isFirst, label) {
     return {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: function () {
@@ -209,6 +289,7 @@ var PairsPhase = (function () {
       choices: 'NO_KEYS',
       trial_duration: CONFIG.timing.practice_feedback_ms,
       data: { block: 'practice_feedback', block_position: ctx.position },
+      on_load: function () { _showLabel(label); },
     };
   }
 
@@ -304,7 +385,8 @@ var PairsPhase = (function () {
                          'practice_intro', b.position));
       var pctx = Object.assign({ phase: 'practice' }, ctx);
       practice.forEach(function (row, i) {
-        nodes = nodes.concat(_trialNodes(row, pctx, b.feedback, b.feedback && i === 0));
+        nodes = nodes.concat(_trialNodes(row, pctx, b.feedback, b.feedback && i === 0,
+                                         { n: i + 1, of: practice.length }));
       });
       nodes.push(_screen(P.end_title,
                          _fill(b.position === 1 ? P.end_body : P.end_body_b2, vars),
@@ -326,9 +408,11 @@ var PairsPhase = (function () {
             T.brk.hint, 'break', b.position));
         }
         if (row.trial_type === 'catch') {
-          nodes = nodes.concat(_catchNodes(row, mctx, b.targets[k++]));
+          nodes = nodes.concat(_catchNodes(row, mctx, b.targets[k++],
+                                           { n: row.trial, of: b.fullLength }));
         } else {
-          nodes = nodes.concat(_trialNodes(row, mctx, false, false));
+          nodes = nodes.concat(_trialNodes(row, mctx, false, false,
+                                           { n: row.trial, of: b.fullLength }));
         }
       });
     }

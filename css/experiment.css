@@ -71,6 +71,33 @@ html, body {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
+  position: relative;   /* anchors the dev trial label */
+}
+
+/* Dev trial label (dev.html only, never recorded). Absolutely positioned,
+   so it does not change the trial layout or the window check. */
+.dev-trial-label {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+}
+.dev-trial-label span {
+  display: inline-block;
+  padding: 2px 8px;
+  font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  color: #222;
+  background: #fff6c8;
+  border: 1px solid #c9b458;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.dev-trial-label-fixed {
+  position: fixed;
+  top: auto;
+  bottom: 14px;
 }
 
 /* FIXED SIZE FOR EVERY PARTICIPANT.

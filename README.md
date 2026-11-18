@@ -135,6 +135,7 @@ vendor/                 jsPsych 7.1.2 + jQuery 2.2.0, pinned (identical to the
 jspsych-7-pavlovia-2021.12.js   the Pavlovia plugin (loaded only on Pavlovia)
 tools/sync_to_pavlovia.sh       copy a commit into the Pavlovia clone (SETUP §7)
 tools/check_package.js          offline check of the package, texts and config (SETUP §5)
+tools/test_trial_label.js       browser test of the dev trial label (header says how to run it)
 data/sets/v5b_180/      FROZEN package: README.txt, design.json, assignment.json,
                         lists/ (8 lists of 200), practice/ (block1, block2),
                         items.csv, preload.json (638 paths), manifest.csv,
@@ -260,6 +261,17 @@ custom session:
 - custom: any block switch, either block position, main and practice
   trials per block.
 
+**Trial label.** The "Trial label" box (ticked by default) shows a small
+label under the images on every practice and main trial (catch trials: at
+the bottom of the screen), e.g. `Block 1 · 37/200 · sat_only · A016 · A on
+left · colour +1.03 SD, contrast +0.00 SD`. Colour and contrast are the
+list's `pred_sat` and `pred_fog` (positive = image A is the predicted
+choice); consistency rows add `repeat of trial n`, catch rows their target.
+The label is drawn after each screen appears, so it is not recorded in any
+column (including `stimulus`). It never appears on `index.html`, and
+`index.html` refuses to start if `CONFIG.dev.trial_label` is true.
+`node tools/test_trial_label.js` checks all of this in a browser.
+
 Every dev session is stamped `is_dev = true`; shortened ones also
 `shortened = true`, `shortened_to = N`. Shortening exists only here: the
 loader ignores `CONFIG.limits` outside dev.html, and `index.html` refuses
@@ -306,7 +318,8 @@ single invitation while any item fails**.
 - [ ] Every block switched on: `consent`, `episodes`, `practice`, `main`,
       `rest`, `words`, `state`; `blocks.positions: [1, 2]`;
       `size_check: false`; `limits.max_trials` and `limits.max_practice`
-      both 0 (`index.html` refuses to start otherwise);
+      both 0, and `dev.trial_label: false` (`index.html` refuses to start
+      otherwise);
       `calibration.*` all true; `display.allow_scaling: false`.
 - [ ] `practice` as registered (now 3 + 3 trials, both with feedback).
 - [ ] `platform: 'auto'` (or set explicitly to where it is hosted), and the

@@ -30,6 +30,12 @@
  * SHORTENED RUNS (CONFIG.limits.max_trials, per block) are available
  * only here: Loader ignores the limits outside dev.html, and validate.js
  * refuses to start index.html while they are set.
+ *
+ * TRIAL LABEL: the "Trial label" box (on by default) sets
+ * CONFIG.dev.trial_label for whichever preset or custom session is
+ * started, showing a small label under the images on every practice and
+ * main trial. It is never recorded (see pairs.js) and never shown on
+ * index.html.
  * ========================================================================= */
 
 var DevMenu = (function () {
@@ -328,6 +334,13 @@ var DevMenu = (function () {
     });
     html += '</div>';
 
+    // Applies to every preset and to the custom session.
+    html += '<div class="dev-switchers"><label class="dev-inline">' +
+            '<input id="dev-trial-label" type="checkbox" checked> ' +
+            '<b>Trial label</b> under the images on every practice and main trial ' +
+            '(block, trial, type, item, side, colour / contrast in SD; not ' +
+            'recorded, never on index.html)</label></div>';
+
     if (!ready) {
       html += '<p class="dev-warning">Choose a group and a slot first. index.html ' +
               'refuses to start without <code>?group=</code> and a valid ' +
@@ -393,6 +406,7 @@ var DevMenu = (function () {
         for (var j = 0; j < PRESETS.length; j++) {
           if (PRESETS[j].id === id) {
             _apply(PRESETS[j].apply());
+            _applyLabel();
             console.log('[Dev] preset "' + id + '" — platform=' + CONFIG.platform +
                         ', blocks=', CONFIG.blocks, ', calibration=', CONFIG.calibration,
                         ', limits=', CONFIG.limits);
@@ -421,6 +435,7 @@ var DevMenu = (function () {
       var up = document.getElementById('dev-upload').checked;
       _apply({ blocks: blocks, calibration: calibration,
                limits: { max_trials: n, max_practice: np } });
+      _applyLabel();
       CONFIG.platform = up ? _uploadPlatform() : 'local';
       console.log('[Dev] custom — blocks=', blocks, 'calibration=', calibration,
                   'trials=' + (n || 'all') + ', practice=' + (np || 'config') +
@@ -428,6 +443,14 @@ var DevMenu = (function () {
       document.body.innerHTML = '';
       onStart();
     });
+  }
+
+  // The trial-label box -> CONFIG.dev.trial_label.
+  function _applyLabel() {
+    var box = document.getElementById('dev-trial-label');
+    CONFIG.dev = CONFIG.dev || {};
+    CONFIG.dev.trial_label = !!(box && box.checked);
+    console.log('[Dev] trial label ' + (CONFIG.dev.trial_label ? 'on' : 'off'));
   }
 
   // Build a link to this page with query parameters changed (null removes).

@@ -36,7 +36,8 @@
  *   checkConfig(cfg, pkg, opts)
  *                            the practice override, the rest, the limits and
  *                            block positions (index.html refuses shortened
- *                            runs and single blocks), consent.
+ *                            runs and single blocks), the dev trial label
+ *                            (index.html refuses it), consent.
  *
  * run(data) adds the checks that need the browser: platform, libraries,
  * where name/email go.
@@ -737,6 +738,10 @@ var Validate = (function () {
         errors.push('CONFIG.blocks.positions is [' + (B.positions || []).join(', ') +
                     ']; a real session runs both blocks, [1, 2]. Use dev.html to ' +
                     'run one block alone.');
+      }
+      if (cfg.dev && cfg.dev.trial_label) {
+        errors.push('CONFIG.dev.trial_label is ON. The trial label is for dev.html ' +
+                    'only and must never be shown to participants; set it to false.');
       }
       REGISTERED_BLOCKS.forEach(function (b) {
         if (!B[b]) {
