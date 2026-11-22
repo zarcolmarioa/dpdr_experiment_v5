@@ -39,6 +39,11 @@
  *                            runs and single blocks), the dev trial label
  *                            (index.html refuses it), consent.
  *
+ *   checkImageNames(pkg)     DEV ONLY (dev.html and tools/check_package.js):
+ *                            every image a list or practice row shows is
+ *                            named <scene>__c<level>__s<level>.png, which
+ *                            the dev trial label reads its levels from.
+ *
  * run(data) adds the checks that need the browser: platform, libraries,
  * where name/email go.
  *
@@ -556,6 +561,36 @@ var Validate = (function () {
   }
 
   // =======================================================================
+  // IMAGE NAMES (dev only): <scene>__c<level>__s<level>.png, level 0, p1-p3
+  // or n1-n3. The dev trial label reads each image's contrast and colour
+  // levels from its name; the experiment itself never does.
+  // =======================================================================
+  var IMAGE_NAME = /^stimuli\/.+__c(0|[pn][1-3])__s(0|[pn][1-3])\.png$/;
+
+  function checkImageNames(pkg) {
+    var errors = [], warnings = [], bad = {};
+    function look(rows, where) {
+      (rows || []).forEach(function (r) {
+        if (r.trial_type === 'catch' && r.catch_mode === 'no_images') return;
+        [r.left_path, r.right_path].forEach(function (p) {
+          if (!IMAGE_NAME.test(String(p))) bad[p] = where + ' trial ' + r.trial;
+        });
+      });
+    }
+    Object.keys(pkg.lists || {}).forEach(function (id) { look(pkg.lists[id], 'list ' + id); });
+    Object.keys(pkg.practice || {}).forEach(function (f) { look(pkg.practice[f], f); });
+    var names = Object.keys(bad);
+    if (names.length) {
+      errors.push(names.length + ' image(s) shown by the lists or practice files do not ' +
+                  'follow <scene>__c<level>__s<level>.png (level 0, p1-p3 or n1-n3), so ' +
+                  'the dev trial label cannot read their levels, e.g. ' +
+                  names.slice(0, 3).map(function (n) { return n + ' (' + bad[n] + ')'; })
+                    .join(', ') + '.');
+    }
+    return { errors: errors, warnings: warnings };
+  }
+
+  // =======================================================================
   // TEXT
   // texts = { TEXT_EN, TEXT_JA, WORDS_EN, WORDS_JA }
   // opts  = { production: bool, contactStorage: 'datapipe' | 'results_file' }
@@ -815,6 +850,7 @@ var Validate = (function () {
       contactStorage: Platform.contactStorage(),
     }));
     add(checkConfig(CONFIG, data, { devMode: !!window.DEV_MODE }));
+    if (window.DEV_MODE) add(checkImageNames(data));
 
     // --- Participant fields and contact ---------------------------------
     var P = CONFIG.participant || {};
@@ -982,6 +1018,7 @@ var Validate = (function () {
     checkPackage: checkPackage,
     checkText:    checkText,
     checkConfig:  checkConfig,
+    checkImageNames: checkImageNames,
   };
 })();
 

@@ -338,8 +338,9 @@ var DevMenu = (function () {
     html += '<div class="dev-switchers"><label class="dev-inline">' +
             '<input id="dev-trial-label" type="checkbox" checked> ' +
             '<b>Trial label</b> under the images on every practice and main trial ' +
-            '(block, trial, type, item, side, colour / contrast in SD; not ' +
-            'recorded, never on index.html)</label></div>';
+            '(block, trial, type, item, side, colour / contrast in SD; each ' +
+            'image\'s levels and how far apart they are; not recorded, never ' +
+            'on index.html)</label></div>';
 
     if (!ready) {
       html += '<p class="dev-warning">Choose a group and a slot first. index.html ' +

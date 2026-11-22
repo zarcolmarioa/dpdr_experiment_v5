@@ -443,7 +443,11 @@ var CONFIG = {
   // colour / contrast are the list's pred_sat / pred_fog: the pair's
   // differences in SD units, signed so that positive = image A is the
   // predicted choice. Consistency rows add "repeat of trial n", catch rows
-  // their target.
+  // their target. A second line (not on catch rows, which show no images)
+  // gives each image's contrast and colour levels, read from its file name
+  // (<scene>__c<level>__s<level>.png; 0, p1-p3, n1-n3; c0 + s0 = "original"),
+  // and how many levels apart the two are:
+  //   Left: contrast −2, colour +1 · Right: contrast −2, colour −3 · Apart: contrast 0, colour 4 levels
   //
   // dev.html switches it on with the "Trial label" box in the dev menu (on
   // by default there). It is drawn into the page after each screen appears,
