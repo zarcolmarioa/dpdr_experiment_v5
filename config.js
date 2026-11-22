@@ -289,7 +289,11 @@ var CONFIG = {
   // uploaded for a stopped session (the check runs before the ID screen).
   //
   // min_width/min_height are only the RECOMMENDED size, recorded as
-  // viewport_ok; the stop is decided by the measurement, not by them.
+  // viewport_ok; the stop is decided by the measurement, not by them. The
+  // measured smallest window that passes is 1056 x 666 CSS pixels (both
+  // languages, both groups): the question at 1.5rem on up to two lines, the
+  // two panels, and the arrow keys shown under them on the first practice
+  // trial of each block.
   // -----------------------------------------------------------------------
   display: {
     image_px:      512,

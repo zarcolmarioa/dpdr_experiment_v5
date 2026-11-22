@@ -200,12 +200,21 @@ var PairsPhase = (function () {
   // positioned absolutely under each panel, so the layout does not move.
   function trialHTML(promptHTML, leftPath, rightPath, opts) {
     var arrows = !!(opts && opts.arrows);
-    return '<div class="stim-prompt">' + promptHTML + '</div>' +
+    return _promptDiv(promptHTML) +
            '<div class="stim-row' + (arrows ? ' has-keys' : '') +
            '" style="gap:' + CONFIG.display.gap_px + 'px;">' +
            _panel(leftPath,  false, arrows ? '&#8592;' : null) +
            _panel(rightPath, false, arrows ? '&#8594;' : null) +
            '</div>';
+  }
+
+  // The text above the images. Never wider than the two images, so a line
+  // wraps at the same place on every screen of a trial (the question, and
+  // the message that replaces it after the first practice trial).
+  function _promptDiv(html, extraClass) {
+    var w = 2 * CONFIG.display.image_px + CONFIG.display.gap_px;
+    return '<div class="stim-prompt' + (extraClass ? ' ' + extraClass : '') +
+           '" style="max-width:' + w + 'px;">' + html + '</div>';
   }
 
   // Give the question area the height of the tallest of `htmls` at the
@@ -402,7 +411,7 @@ var PairsPhase = (function () {
       stimulus: function () {
         var side = _lastSide();
         return (
-          '<div class="stim-prompt">&nbsp;</div>' +
+          _promptDiv('&nbsp;') +
           '<div class="stim-row" style="gap:' + CONFIG.display.gap_px + 'px;">' +
           _panel(row.left_path,  side === 'left')  +
           _panel(row.right_path, side === 'right') +
@@ -427,8 +436,7 @@ var PairsPhase = (function () {
       stimulus: function () {
         var side = _lastSide();
         return (
-          '<div class="stim-prompt stim-message">' + firstFeedback(ctx.episode) +
-          '</div>' +
+          _promptDiv(firstFeedback(ctx.episode), 'stim-message') +
           '<div class="stim-row" style="gap:' + CONFIG.display.gap_px + 'px;">' +
           _panel(row.left_path,  side === 'left'  ? false : 'hidden') +
           _panel(row.right_path, side === 'right' ? false : 'hidden') +

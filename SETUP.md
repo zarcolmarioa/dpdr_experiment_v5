@@ -138,7 +138,7 @@ order, set mapping and list order — `assignment.json`).
 The session runs in this order (both groups):
 
 1. consent → 2. full screen and window check → 3. ID screen →
-4. brightness → 5. gamma matching → 6. episode selection →
+4. set-up screen and brightness → 5. gamma matching → 6. episode selection →
 7. block 1 (reinstatement, 3 practice trials, 200 trials) → 8. 1-minute
 rest → 9. block 2 (as block 1) → 10. word ratings → 11. state items →
 12. save → 13. completion screen.
