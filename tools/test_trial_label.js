@@ -24,6 +24,15 @@
  *      from the package's own JSON files; nothing of it reaches the data.
  *   4. dev.html, the box off: no label anywhere, and the same columns and
  *      the same `stimulus` HTML as with it on.
+ *   5. The levels line (line 2: each image's contrast and colour levels,
+ *      read by the page from the file names, and how far apart they are),
+ *      checked against items.csv (contrast_step_a / colour_step_a /
+ *      contrast_step_b / colour_step_b, joined by item_id; A is on the left
+ *      when a_is_left is true): the page's own PairsPhase.levelsLine() on
+ *      the rows of every trial type of every list and practice file. Runs 3
+ *      and 4 check it on screen too (catch screens: line 1 only).
+ *   6. The dev-only image-name check (validate.js checkImageNames) passes
+ *      on the package and catches a malformed name.
  *
  * Needs Node 18+ and Playwright with its Chromium. Install them OUTSIDE the
  * repository, so nothing is added to it (or synced to Pavlovia):
@@ -88,10 +97,38 @@ function expectedLabel(row, position, practice) {
     const k = (catchCount[position] = (catchCount[position] || 0) + 1) - 1;
     const t = design.catch.targets_by_block_position[position][k];
     parts.push('target ' + (t === 'ArrowUp' ? '↑ ' : '↓ ') + t + ' (images not shown)');
+    return parts.join(' · ');                       // catch: no images, no line 2
   }
-  return parts.join(' · ');
+  return parts.join(' · ') + '\n' + expectedLevels(row);
 }
 let catchCount = {};
+
+// items.csv (no quoted fields), by item_id.
+const items = (() => {
+  const lines = fs.readFileSync(path.join(PKG, 'items.csv'), 'utf8').trim().split(/\r?\n/);
+  const head = lines[0].split(',');
+  const out = {};
+  lines.slice(1).forEach((l) => {
+    const c = l.split(','), r = {};
+    head.forEach((h, i) => { r[h] = c[i]; });
+    out[r.item_id] = r;
+  });
+  return out;
+})();
+
+// Line 2 of the label, from items.csv (not from the file names).
+function signed(n) { return n > 0 ? '+' + n : (n < 0 ? '\u2212' + Math.abs(n) : '0'); }
+function expectedLevels(row) {
+  const it = items[row.item_id];
+  if (!it) throw new Error('item ' + row.item_id + ' is not in items.csv');
+  const A = { c: +it.contrast_step_a, s: +it.colour_step_a };
+  const B = { c: +it.contrast_step_b, s: +it.colour_step_b };
+  const [L, R] = row.a_is_left ? [A, B] : [B, A];
+  const side = (x) => (x.c === 0 && x.s === 0) ? 'original'
+                      : 'contrast ' + signed(x.c) + ', colour ' + signed(x.s);
+  return 'Left: ' + side(L) + ' \u00b7 Right: ' + side(R) + ' \u00b7 Apart: contrast ' +
+         Math.abs(L.c - R.c) + ', colour ' + Math.abs(L.s - R.s) + ' levels';
+}
 
 // The rows of block `position` for a group and slot, as assignment.json says.
 function blockRows(group, slot, position) {
@@ -115,7 +152,10 @@ async function state(page) {
       block: d.block, is_catch: d.is_catch, catch_target: d.catch_target,
       block_trial: d.block_trial, phase: d.phase, block_position: d.block_position,
       end: !!document.querySelector('.end-card'),
-      label: (document.querySelector('.dev-trial-label') || {}).textContent || null,
+      label: document.querySelector('.dev-trial-label')
+        ? [...document.querySelectorAll('.dev-trial-label .dev-label-line')]
+            .map((l) => l.textContent).join('\n')
+        : null,
       drawn: !!document.querySelector('.stim-row, .catch-screen'),
     };
   });
@@ -347,9 +387,13 @@ function labelInData(rows, labels) {
               !bad.length && got.length === want.length,
               bad.length ? JSON.stringify(bad.slice(0, 3)) : got.length + ' vs ' + want.length);
         const sample = (t) => (screens.find((s) => s.label && s.label.indexOf(t) !== -1) || {}).label;
-        console.log('     e.g. ' + sample('/200 \u00b7 sat_only') + '\n          ' + sample('consistency') +
-                    '\n          ' + sample('catch') + '\n          ' + sample('practice'));
-        check('a consistency label names the repeated trial', /repeat of trial \d+$/.test(sample('consistency') || ''));
+        ['/200 \u00b7 sat_only', 'conflict', 'consistency', 'catch', 'practice'].forEach((t) => {
+          console.log('     ' + String(sample(t)).split('\n').join('\n     '));
+        });
+        check('line 2 (levels) on every screen except catch screens',
+              screens.every((s) => (s.label.split('\n').length === 2) ===
+                                   !/\u00b7 catch/.test(s.label)));
+        check('a consistency label names the repeated trial', /repeat of trial \d+$/m.test(sample('consistency') || ''));
         check('a catch label names the target', /target [↑↓] Arrow(Up|Down)/.test(sample('catch') || ''));
         check('nothing of a label in the recorded data',
               !labelInData(rows, screens.map((s) => s.label)).length,
@@ -364,6 +408,59 @@ function labelInData(rows, labels) {
         check('the same recorded stimulus HTML as with the label on', stim(rows) === stim(onRows));
       }
       check('no page errors', !page.errors.length, page.errors.join('\n'));
+      await page.context().close();
+    }
+
+    // 5. The levels line against items.csv, from the page's own code.
+    console.log('\n5. levels line (PairsPhase.levelsLine) against items.csv, every list and practice file');
+    {
+      const page = await open('dev.html?group=participant&slot=1&pid=' + TEST_ID);
+      await page.waitForSelector('#dev-run-custom');
+      const rows = [];
+      Object.values(design.lists).forEach((d) => rows.push(...read(d.file)));
+      [...new Set(Object.values(design.practice))].forEach((f) => rows.push(...read(f)));
+      const shown = rows.filter((r) => !(r.trial_type === 'catch' && r.catch_mode === 'no_images'));
+      const got = await page.evaluate((rs) => rs.map((r) => PairsPhase.levelsLine(r)), shown);
+      const perType = {}, bad = [];
+      shown.forEach((r, i) => {
+        perType[r.trial_type] = (perType[r.trial_type] || 0) + 1;
+        if (got[i] !== expectedLevels(r)) {
+          bad.push(r.list_id + ' ' + r.trial + ': ' + got[i] + ' | want ' + expectedLevels(r));
+        }
+      });
+      check('the levels line matches items.csv on all ' + shown.length + ' rows that show images (' +
+            Object.entries(perType).map(([t, n]) => n + ' ' + t).join(', ') + ')',
+            !bad.length, bad.slice(0, 3).join('\n       '));
+      // Catch rows' images are named too, though never shown: check them anyway.
+      const catches = rows.filter((r) => r.trial_type === 'catch');
+      const gotC = await page.evaluate((rs) => rs.map((r) => PairsPhase.levelsLine(r)), catches);
+      check('... and on the ' + catches.length + ' catch rows (not shown on screen)',
+            catches.every((r, i) => gotC[i] === expectedLevels(r)));
+      const orig = shown.map((r, i) => i).filter((i) => /original/.test(expectedLevels(shown[i])));
+      check('unedited images (c0, s0) read as "original" (' + orig.length + ' rows)',
+            orig.length > 0 && orig.every((i) => /original/.test(got[i])));
+      [['sat_only', 1], ['conflict', 1], ['consistency', 1], ['practice', 1]].forEach(([t]) => {
+        const k = shown.findIndex((r) => r.trial_type === t);
+        console.log('     ' + t + ' ' + shown[k].item_id + ': ' + got[k]);
+      });
+      await page.context().close();
+    }
+
+    // 6. The dev-only image-name check.
+    console.log('\n6. image-name check (validate.js checkImageNames)');
+    {
+      const page = await open('dev.html?group=participant&slot=1&pid=' + TEST_ID);
+      await page.waitForSelector('#dev-run-custom');
+      const r = await page.evaluate(() => {
+        const pkg = Loader.data();
+        const ok = Validate.checkImageNames(pkg).errors.length;
+        const copy = JSON.parse(JSON.stringify(pkg));
+        copy.lists[Object.keys(copy.lists)[0]][4].left_path = 'stimuli/x__c4__sp1.png';
+        copy.practice[Object.keys(copy.practice)[0]][0].right_path = 'stimuli/x_c0_s0.png';
+        return { ok, bad: Validate.checkImageNames(copy).errors };
+      });
+      check('passes on the package', r.ok === 0);
+      check('catches malformed names', r.bad.length === 1 && /^2 image\(s\)/.test(r.bad[0]), r.bad.join(' '));
       await page.context().close();
     }
   } finally {
