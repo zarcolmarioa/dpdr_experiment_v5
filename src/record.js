@@ -123,8 +123,8 @@ var Record = (function () {
       user_agent:           navigator.userAgent,
     };
     // Per block position: the episode, set, list and practice file the
-    // assignment row names, and the practice settings actually used
-    // (config.js: practice, which overrides design.json).
+    // assignment row names, and the practice settings, from the package's
+    // design.json (practice_by_block, practice_feedback_by_block_position).
     [1, 2].forEach(function (p) {
       var blk = null;
       a.blocks.forEach(function (x) { if (x.position === p) blk = x; });
@@ -348,7 +348,7 @@ var Record = (function () {
   // -----------------------------------------------------------------------
   // Filename for the uploaded file:
   //     <participant_id>_<stimulus_set>_<session start, Japan time>.csv
-  //     e.g. R_9rJJWk01c767jE8_v5b_180_2026-11-30T14-12-40.csv
+  //     e.g. R_9rJJWk01c767jE8_v5c_180_2026-11-30T14-12-40.csv
   // -----------------------------------------------------------------------
   function sessionFilename(participantId) {
     var set = Loader.stimulusSet();

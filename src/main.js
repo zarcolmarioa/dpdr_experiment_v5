@@ -196,7 +196,7 @@ function _buildSaveNodes() {
       command: 'finish',
       // Pavlovia names the file <project>_<participantId>_SESSION_<date>.csv.
       // participantId carries the same ID, set and Japan-time stamp as the
-      // DataPipe file name, e.g. R_xxx_v5b_180_2026-11-30T14-12-40.
+      // DataPipe file name, e.g. R_xxx_v5c_180_2026-11-30T14-12-40.
       participantId: function () {
         return Record.sessionFilename(ParticipantID.get() || 'NOID')
                      .replace(/\.csv$/, '');

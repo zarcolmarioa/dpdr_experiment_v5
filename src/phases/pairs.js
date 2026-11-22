@@ -8,7 +8,9 @@
  *   block start   -> block<p>_start is stamped
  *   reinstatement -> names the block's episode (phases/episodes.js)
  *   practice intro (block 2: says the question has changed, shows it)
- *   3 practice trials, each followed by feedback (config.js: practice)
+ *   the practice trials (design.json: 3), each followed by feedback when
+ *     the block has it (design.json: practice_feedback_by_block_position,
+ *     practice_feedback_trials)
  *   practice end
  *   200 main trials, in the list's order: 180 analysed, 15 consistency
  *     repeats, 5 catch, with a break after trials 40, 80, 120 and 160
@@ -441,7 +443,11 @@ var PairsPhase = (function () {
                          'practice_intro', b.position));
       var pctx = Object.assign({ phase: 'practice' }, ctx);
       practice.forEach(function (row, i) {
-        nodes = nodes.concat(_trialNodes(row, pctx, b.feedback, b.feedback && i === 0,
+        // Feedback on the first b.feedbackTrials practice trials (design.json:
+        // practice_feedback_trials; 0 when the block has no feedback). The
+        // explanation line comes with the first of them.
+        var fb = i < b.feedbackTrials;
+        nodes = nodes.concat(_trialNodes(row, pctx, fb, fb && i === 0,
                                          { n: i + 1, of: practice.length }));
       });
       nodes.push(_screen(P.end_title,
