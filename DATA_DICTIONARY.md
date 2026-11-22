@@ -48,9 +48,9 @@ stamp in the middle (or `session_start_time`), not that. A pilot run
 (Pavlovia's **Pilot** button) is not stored on Pavlovia: the same file is
 downloaded to the computer that ran it.
 
-A full session produces **1253 rows** (1254 on Pavlovia, one or two more
-if ID entry needed a retry) and about **170 columns** (174 for participants,
-168 for controls). The columns differ slightly between the
+A full session produces **1254 rows** (1255 on Pavlovia, one or two more
+if ID entry needed a retry) and about **175 columns** (178 for participants,
+172 for controls). The columns differ slightly between the
 groups: the episode answers are `ep_derealization_*` and `ep_ordinary_*`
 for participants, `ep_ordinary_*` only for controls (§6).
 
