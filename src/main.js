@@ -17,7 +17,8 @@
  *    3. participant ID (+ optional name/email)
  *       -> the background image download (all of preload.json, block 1's
  *          images first) starts after this screen
- *    4. brightness confirmation      calibration/brightness-confirmation.js
+ *    4. set-up screen, brightness    calibration/setup.js,
+ *                                    calibration/brightness-confirmation.js
  *    5. gamma matching               calibration/gamma.js
  *    6. episode selection            phases/episodes.js    blocks.episodes
  *    7. block 1                      phases/pairs.js (+ the reinstatement
@@ -520,8 +521,12 @@ function runExperiment() {
   // usually cached by the time each block needs them.
   timeline.push(_buildBackgroundPreload(positions));
 
-  // 4-5. Display calibration. Order matters: brightness first, because the
-  // gamma match is judged by eye and a dimmed screen would bias it.
+  // 4-5. Set-up screen, then display calibration. Order matters:
+  // brightness before gamma, because the gamma match is judged by eye and
+  // a dimmed screen would bias it.
+  if (CONFIG.calibration.setup) {
+    timeline = timeline.concat(SetupScreen.getNodes(jsPsych));
+  }
   if (CONFIG.calibration.brightness) {
     timeline = timeline.concat(BrightnessConfirmation.getNodes(jsPsych));
   }
@@ -572,7 +577,7 @@ function runExperiment() {
 // ---------------------------------------------------------------------------
 function _showFatal(message) {
   var T = (typeof TEXT_EN !== 'undefined') ? TEXT_EN : null;
-  var title = T ? T.error.title : 'Something went wrong';
+  var title = T ? T.error.title : 'An error has occurred';
   var body  = T ? T.error.body  : '<p>The study could not start.</p>';
   var html  = '<div class="card"><h2>' + title + '</h2>' + body;
   if (CONFIG.debug && message) {

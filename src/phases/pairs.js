@@ -7,11 +7,13 @@
  *                    downloading started in the background earlier)
  *   block start   -> block<p>_start is stamped
  *   reinstatement -> names the block's episode (phases/episodes.js)
- *   practice intro (block 2: says the question has changed, shows it)
+ *   practice intro, keyed by the block's episode (block 1: what the
+ *     pictures are, the task, the arrow keys; block 2: the second part
+ *     works the same way, the question has changed, the task again)
  *   the practice trials (design.json: 3), each followed by feedback when
  *     the block has it (design.json: practice_feedback_by_block_position,
  *     practice_feedback_trials)
- *   practice end
+ *   practice end (no trial count or duration)
  *   200 main trials, in the list's order: 180 analysed, 15 consistency
  *     repeats, 5 catch, with a break after trials 40, 80, 120 and 160
  *     (design.json: timing.breaks_after_trial), "n of 200"
@@ -33,8 +35,20 @@
  * the k-th catch row of a block getting the block's k-th target, so the
  * targets restart at the first one in each block.
  *
- * PRACTICE feedback outlines the chosen image. It confirms the key mapping
- * visually and says nothing about why the choice was made.
+ * PRACTICE FEEDBACK
+ *   First practice trial of each block: a left arrow under the left image
+ *   and a right arrow under the right one while the participant chooses
+ *   (arrows_shown). When the block has feedback, after the response only
+ *   the CHOSEN image stays (the other one disappears, its space kept, no
+ *   outline), and the question is replaced, at the same size, by a message
+ *   keyed by episode (practice.first_feedback.<episode>) confirming that
+ *   this is the picture the participant chose. It is never presented as a
+ *   correct answer. After CONFIG.timing.first_feedback_ms the next
+ *   practice trial starts. feedback_display = 'chosen_only'.
+ *   Other practice trials with feedback: the chosen image is outlined for
+ *   CONFIG.timing.practice_feedback_ms. feedback_display = 'outline'.
+ *   The question area keeps the same height on the trial and on its
+ *   chosen-only screen (_reservePrompt), so the image does not move.
  *
  * DEV TRIAL LABEL (dev.html only, CONFIG.dev.trial_label): a small label
  * under the images. Line 1 names the block, trial, type, item, side and
@@ -181,12 +195,46 @@ var PairsPhase = (function () {
   }
 
   // The markup of an image trial, also used by screen-check.js to measure
-  // whether the real layout fits the window.
-  function trialHTML(promptHTML, leftPath, rightPath) {
+  // whether the real layout fits the window. opts.arrows: the arrow keys
+  // under the images (first practice trial of a block). The arrows are
+  // positioned absolutely under each panel, so the layout does not move.
+  function trialHTML(promptHTML, leftPath, rightPath, opts) {
+    var arrows = !!(opts && opts.arrows);
     return '<div class="stim-prompt">' + promptHTML + '</div>' +
-           '<div class="stim-row" style="gap:' + CONFIG.display.gap_px + 'px;">' +
-           _panel(leftPath) + _panel(rightPath) +
+           '<div class="stim-row' + (arrows ? ' has-keys' : '') +
+           '" style="gap:' + CONFIG.display.gap_px + 'px;">' +
+           _panel(leftPath,  false, arrows ? '&#8592;' : null) +
+           _panel(rightPath, false, arrows ? '&#8594;' : null) +
            '</div>';
+  }
+
+  // Give the question area the height of the tallest of `htmls` at the
+  // current width, so a trial and the screen that replaces its question
+  // with a message have the same layout and the image stays in place. Runs
+  // in on_load, before the screen is painted.
+  function _reservePrompt(htmls) {
+    var el = document.querySelector('.stim-prompt');
+    if (!el || !el.parentNode) return;
+    var w = el.getBoundingClientRect().width;
+    var h = 0;
+    htmls.forEach(function (html) {
+      var c = el.cloneNode(false);
+      c.innerHTML = html;
+      c.style.position   = 'absolute';
+      c.style.visibility = 'hidden';
+      c.style.left = '0'; c.style.top = '0';
+      c.style.width = w + 'px';
+      c.style.minHeight = '0';
+      el.parentNode.appendChild(c);
+      h = Math.max(h, c.getBoundingClientRect().height);
+      c.parentNode.removeChild(c);
+    });
+    if (h > 0) el.style.minHeight = h + 'px';
+  }
+
+  // The message after the first practice response, for an episode.
+  function firstFeedback(episode) {
+    return Loader.byEpisode(Loader.text().practice.first_feedback, episode);
   }
 
   // -----------------------------------------------------------------------
@@ -256,25 +304,35 @@ var PairsPhase = (function () {
   // -----------------------------------------------------------------------
   // One image panel, fixed at CONFIG.display.image_px.
   // -----------------------------------------------------------------------
-  function _panel(relativePath, chosen) {
+  // `chosen`: true = outlined, 'hidden' = not shown (its space kept).
+  // `key`: an arrow shown under the panel.
+  function _panel(relativePath, chosen, key) {
+    var cls = 'stim-panel' + (chosen === 'hidden' ? ' stim-panel-hidden'
+                            : chosen ? ' chosen' : '');
     return (
-      '<div class="stim-panel' + (chosen ? ' chosen' : '') + '" style="' +
+      '<div class="' + cls + '" style="' +
       'width:'  + CONFIG.display.image_px + 'px;' +
       'height:' + CONFIG.display.image_px + 'px;">' +
       (relativePath
         ? '<img src="' + Loader.imageURL(relativePath) + '" alt="">' : '') +
+      (key ? '<div class="stim-key" aria-hidden="true">' + key + '</div>' : '') +
       '</div>'
     );
   }
 
   // -----------------------------------------------------------------------
-  // The nodes making up one trial. `feedback` = outline the chosen image
-  // afterwards (practice); `firstFeedback` = also show the one-line
-  // explanation (first practice trial of the block).
+  // The nodes making up one trial. `mode` (practice only):
+  //   mode.arrows    the arrow keys under the images while choosing
+  //   mode.feedback  'chosen_only' (first practice trial: only the chosen
+  //                  image stays, with the message), 'outline' (the chosen
+  //                  image outlined) or '' (none: main trials)
   // -----------------------------------------------------------------------
-  function _trialNodes(row, ctx, feedback, firstFeedback, pos) {
+  function _trialNodes(row, ctx, mode, pos) {
     var nodes = [];
     var label = _labelLines(row, ctx, pos);
+    var arrows   = !!(mode && mode.arrows);
+    var feedback = (mode && mode.feedback) || '';
+    var chosenOnly = (feedback === 'chosen_only');
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -286,15 +344,19 @@ var PairsPhase = (function () {
 
     var data = Record.pairTrialData(row, ctx);
     data.practice_feedback = !!feedback;
+    data.feedback_display  = feedback;
+    data.arrows_shown      = arrows;
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
-      stimulus: trialHTML(prompt(ctx.episode), row.left_path, row.right_path),
+      stimulus: trialHTML(prompt(ctx.episode), row.left_path, row.right_path,
+                          { arrows: arrows }),
       choices: [CONFIG.keys.left, CONFIG.keys.right],
       // No trial_duration: responses are self-paced, with no timeout.
       data: data,
       on_load: function () {
         Record.markTaskStart();
+        if (chosenOnly) _reservePrompt([prompt(ctx.episode), firstFeedback(ctx.episode)]);
         var el = document.querySelector('.stim-panel');
         if (el) {
           var r = el.getBoundingClientRect();
@@ -309,7 +371,8 @@ var PairsPhase = (function () {
       },
     });
 
-    if (feedback) nodes.push(_feedbackNode(row, ctx, firstFeedback, label));
+    if (chosenOnly)  nodes.push(_chosenOnlyNode(row, ctx, label));
+    else if (feedback) nodes.push(_feedbackNode(row, ctx, label));
 
     nodes.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -323,21 +386,23 @@ var PairsPhase = (function () {
   }
 
   // -----------------------------------------------------------------------
+  // The side chosen on the most recent image trial.
+  function _lastSide() {
+    var last = jsPsych.data.get().filter({ block: 'pairs' }).last(1).values()[0];
+    return last ? last.response_side : null;
+  }
+
   // Practice feedback. Re-renders the same pair with the chosen image
   // outlined, for a fixed duration. It says nothing about WHY the choice
   // was made: the outline teaches the key mapping and nothing else.
   // -----------------------------------------------------------------------
-  function _feedbackNode(row, ctx, isFirst, label) {
+  function _feedbackNode(row, ctx, label) {
     return {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: function () {
-        var T = Loader.text();
-        var last = jsPsych.data.get().filter({ block: 'pairs' }).last(1).values()[0];
-        var side = last ? last.response_side : null;
+        var side = _lastSide();
         return (
-          '<div class="stim-prompt">' +
-          (isFirst ? T.practice.feedback_first : '&nbsp;') +
-          '</div>' +
+          '<div class="stim-prompt">&nbsp;</div>' +
           '<div class="stim-row" style="gap:' + CONFIG.display.gap_px + 'px;">' +
           _panel(row.left_path,  side === 'left')  +
           _panel(row.right_path, side === 'right') +
@@ -346,8 +411,38 @@ var PairsPhase = (function () {
       },
       choices: 'NO_KEYS',
       trial_duration: CONFIG.timing.practice_feedback_ms,
-      data: { block: 'practice_feedback', block_position: ctx.position },
+      data: { block: 'practice_feedback', block_position: ctx.position,
+              feedback_display: 'outline' },
       on_load: function () { _showLabel(label); },
+    };
+  }
+
+  // First practice trial of a block: only the chosen image stays, in its
+  // place, with no outline; the other disappears (its space kept). The
+  // question is replaced, at the same size, by the episode's message
+  // confirming the participant's own choice. Then the next practice trial.
+  function _chosenOnlyNode(row, ctx, label) {
+    return {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function () {
+        var side = _lastSide();
+        return (
+          '<div class="stim-prompt stim-message">' + firstFeedback(ctx.episode) +
+          '</div>' +
+          '<div class="stim-row" style="gap:' + CONFIG.display.gap_px + 'px;">' +
+          _panel(row.left_path,  side === 'left'  ? false : 'hidden') +
+          _panel(row.right_path, side === 'right' ? false : 'hidden') +
+          '</div>'
+        );
+      },
+      choices: 'NO_KEYS',
+      trial_duration: CONFIG.timing.first_feedback_ms,
+      data: { block: 'practice_feedback', block_position: ctx.position,
+              feedback_display: 'chosen_only' },
+      on_load: function () {
+        _reservePrompt([prompt(ctx.episode), firstFeedback(ctx.episode)]);
+        _showLabel(label);
+      },
     };
   }
 
@@ -434,24 +529,26 @@ var PairsPhase = (function () {
     // --- Practice --------------------------------------------------------
     if (practice.length) {
       var P = T.practice;
-      var vars = { N: practice.length, QUESTION: prompt(b.episode),
-                   TOTAL: b.rows.length };
+      var vars = { N: practice.length, QUESTION: prompt(b.episode) };
       var intro = (b.position === 1)
-        ? _fill(P.body, vars)
-        : _fill(P.body_b2, vars) + _fill(P.question_changed, vars);
+        ? Loader.byEpisode(P.body, b.episode) + P.keys_line +
+          _fill(P.count_line, vars)
+        : P.intro_b2 + _fill(P.question_changed, vars) +
+          Loader.byEpisode(P.body_b2, b.episode) + _fill(P.count_line, vars);
       nodes.push(_screen(P.title, intro, P.continue_hint,
                          'practice_intro', b.position));
       var pctx = Object.assign({ phase: 'practice' }, ctx);
       practice.forEach(function (row, i) {
-        // Feedback on the first b.feedbackTrials practice trials (design.json:
-        // practice_feedback_trials; 0 when the block has no feedback). The
-        // explanation line comes with the first of them.
-        var fb = i < b.feedbackTrials;
-        nodes = nodes.concat(_trialNodes(row, pctx, fb, fb && i === 0,
+        // Arrows under the images on the first practice trial. Feedback on
+        // the first b.feedbackTrials practice trials (design.json:
+        // practice_feedback_trials; 0 when the block has no feedback): the
+        // chosen-only display on the first, the outline on the others.
+        var fb = (i < b.feedbackTrials) ? (i === 0 ? 'chosen_only' : 'outline') : '';
+        nodes = nodes.concat(_trialNodes(row, pctx, { arrows: i === 0, feedback: fb },
                                          { n: i + 1, of: practice.length }));
       });
       nodes.push(_screen(P.end_title,
-                         _fill(b.position === 1 ? P.end_body : P.end_body_b2, vars),
+                         b.position === 1 ? P.end_body : P.end_body_b2,
                          P.end_hint, 'practice_end', b.position));
     }
 
@@ -473,7 +570,7 @@ var PairsPhase = (function () {
           nodes = nodes.concat(_catchNodes(row, mctx, b.targets[k++],
                                            { n: row.trial, of: b.fullLength }));
         } else {
-          nodes = nodes.concat(_trialNodes(row, mctx, false, false,
+          nodes = nodes.concat(_trialNodes(row, mctx, null,
                                            { n: row.trial, of: b.fullLength }));
         }
       });
@@ -494,5 +591,6 @@ var PairsPhase = (function () {
     imageLevels:     imageLevels,   // dev label; also used by the tests
     levelsLine:      levelsLine,
     prompt:          prompt,
+    firstFeedback:   firstFeedback,
   };
 })();

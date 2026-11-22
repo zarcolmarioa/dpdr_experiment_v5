@@ -17,8 +17,10 @@
  *      for each of the two episodes of the group (all from the link), above
  *      two panels at exactly
  *      display.image_px. Every part of it is measured against the window.
- *      The practice-feedback line, which replaces the question on the
- *      first practice trial, is measured too. If anything would be cut
+ *      The probe includes the arrow keys shown under the images on the
+ *      first practice trial, and the message that replaces the question
+ *      after that trial (practice.first_feedback, for each of the group's
+ *      episodes) is measured too. If anything would be cut
  *      off, by width or by height, the session stops with a message asking
  *      the participant to enlarge the window (or reset the browser zoom),
  *      or to use a larger screen, and to reopen the link. There is no
@@ -82,9 +84,10 @@ var ScreenCheck = (function () {
            r.bottom <= window.innerHeight + eps;
   }
 
-  // Everything that must be visible: the question line and both panels.
+  // Everything that must be visible: the question line, both panels and
+  // the arrow keys under them.
   function _layoutFits(probe) {
-    var parts = probe.querySelectorAll('.stim-prompt, .stim-panel');
+    var parts = probe.querySelectorAll('.stim-prompt, .stim-panel, .stim-key');
     if (parts.length < 3) return false;
     for (var i = 0; i < parts.length; i++) {
       if (!_inside(parts[i])) return false;
@@ -134,7 +137,7 @@ var ScreenCheck = (function () {
         type: jsPsychHtmlKeyboardResponse,
         stimulus: function () {
           return '<div class="fit-probe" aria-hidden="true">' +
-                 PairsPhase.trialHTML('', null, null) +
+                 PairsPhase.trialHTML('', null, null, { arrows: true }) +
                  '</div>';
         },
         choices: 'NO_KEYS',
@@ -147,12 +150,13 @@ var ScreenCheck = (function () {
 
           // Every line that can stand above the pictures in this session
           // must fit: the question of each of the group's two episodes, and
-          // the feedback line shown after the first practice trial. The
+          // the message shown after the first practice trial of each. The
           // longest one decides.
-          var lines = Loader.episodes().map(function (ep) {
-            return PairsPhase.prompt(ep);
+          var lines = [];
+          Loader.episodes().forEach(function (ep) {
+            lines.push(PairsPhase.prompt(ep));
+            lines.push(PairsPhase.firstFeedback(ep));
           });
-          lines.push(Loader.text().practice.feedback_first);
           for (var i = 0; fits && i < lines.length; i++) {
             prompt.innerHTML = lines[i];
             fits = _layoutFits(probe);

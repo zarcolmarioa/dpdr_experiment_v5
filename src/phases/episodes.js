@@ -18,14 +18,16 @@
  *                   (no questions)
  *
  *   Each RECALLED episode (not the expectation) asks:
- *     words      a few words to identify it       free text, required
- *     when       When was it?                     text or Prefer not to say
- *     duration   How long did it last?            text or Prefer not to say
- *     where      Where were you?                  text or Prefer not to say
- *     tone       unpleasant -3 ... +3 pleasant    or Prefer not to say
- *     intensity  0 ... 6                          or Prefer not to say
- *   Every question needs an answer; "Prefer not to say" is an answer.
- *   There is no default: Continue stays disabled until all are answered.
+ *     words      a few words to identify it       free text, REQUIRED
+ *     when       When was it?                     free text, optional
+ *     duration   How long did it last?            free text, optional
+ *     where      Where were you?                  free text, optional
+ *     tone       unpleasant -3 ... +3 pleasant    REQUIRED
+ *     intensity  0 ... 6                          REQUIRED
+ *   The optional questions carry the "(optional)" tag (episodes.
+ *   optional_tag) and may be left blank. The scales have no default:
+ *   Continue stays disabled until the words, the tone and the intensity
+ *   are answered. There is no "Prefer not to say".
  *   Nothing about clarity, vividness or colour is asked.
  *
  * REINSTATEMENT (start of each block, built by pairs.js's caller)
@@ -43,15 +45,17 @@
  *   One row per screen, block 'episode', with `episode`. On EVERY row
  *   (session properties), for each recalled episode <ep>:
  *     ep_<ep>_words                     the typed words (trimmed)
- *     ep_<ep>_when, _duration, _where   the typed text, or 'prefer_not'
- *     ep_<ep>_tone                      -3 ... 3, or 'prefer_not'
- *     ep_<ep>_intensity                 0 ... 6, or 'prefer_not'
+ *     ep_<ep>_when, _duration, _where   the typed text (trimmed), or ''
+ *                                       (an empty cell) if left blank
+ *     ep_<ep>_tone                      -3 ... 3
+ *     ep_<ep>_intensity                 0 ... 6
  *   e.g. ep_derealization_words, ep_ordinary_tone.
  * ========================================================================= */
 
 var EpisodesPhase = (function () {
 
-  var TEXT_QUESTIONS = ['when', 'duration', 'where'];
+  var TEXT_QUESTIONS = ['when', 'duration', 'where'];   // optional
+  var REQUIRED = ['words', 'tone', 'intensity'];
   var TONE   = [-3, -2, -1, 0, 1, 2, 3];
   var INTENS = [0, 1, 2, 3, 4, 5, 6];
   var RECALLED = ['derealization', 'ordinary'];   // expectation is not recalled
@@ -97,22 +101,24 @@ var EpisodesPhase = (function () {
     );
   }
 
-  // A text question: the field, its example hint, and Prefer not to say.
+  // An optional text question: the field and its example hint. The label
+  // carries the optional tag.
   function _textHTML(name, Q, E) {
     return (
-      '<fieldset class="aq" data-q="' + name + '">' +
-      '<legend><label for="aq_' + name + '">' + Q.label + '</label></legend>' +
+      '<fieldset class="aq aq-optional" data-q="' + name + '">' +
+      '<legend><label for="aq_' + name + '">' + Q.label +
+      ' <span class="aq-optional-tag">' + E.optional_tag + '</span>' +
+      '</label></legend>' +
       '<div class="aq-field">' +
       '<input type="text" class="aq-text" id="aq_' + name + '" ' +
       'maxlength="' + _textMax() + '" autocomplete="off">' +
       '<span class="aq-hint">' + Q.hint + '</span>' +
-      '<label class="aq-opt"><input type="checkbox" id="aq_' + name + '_pn">' +
-      '<span>' + E.prefer_not + '</span></label>' +
       '</div></fieldset>'
     );
   }
 
-  // A scale question: radio points with the end labels, Prefer not to say.
+  // A required scale question: radio points with the end labels, none
+  // selected at first.
   function _scaleHTML(name, Q, E, points) {
     var cells = '';
     points.forEach(function (v) {
@@ -127,38 +133,35 @@ var EpisodesPhase = (function () {
       '<div class="aq-scale">' +
       '<span class="aq-anchor">' + Q.anchor_low + '</span>' + cells +
       '<span class="aq-anchor">' + Q.anchor_high + '</span>' +
-      '<label class="aq-opt"><input type="radio" name="aq_' + name +
-      '" value="prefer_not"><span>' + E.prefer_not + '</span></label>' +
       '</div></fieldset>'
     );
   }
 
   // ---------------------------------------------------------------------
-  // Reading the form. Returns the answers, with null for anything not yet
-  // answered.
+  // Reading the form. Returns the answers: null for a required question
+  // not yet answered, '' for an optional question left blank (saved as an
+  // empty cell, not "null").
   // ---------------------------------------------------------------------
   function _read(display) {
     var out = {};
     var w = display.querySelector('#aq_words');
     out.words = w ? (String(w.value || '').trim() || null) : null;
     TEXT_QUESTIONS.forEach(function (name) {
-      var pn = display.querySelector('#aq_' + name + '_pn');
-      var f  = display.querySelector('#aq_' + name);
-      if (pn && pn.checked) out[name] = 'prefer_not';
-      else out[name] = f ? (String(f.value || '').trim() || null) : null;
+      var f = display.querySelector('#aq_' + name);
+      out[name] = f ? String(f.value || '').trim() : '';
     });
     ['tone', 'intensity'].forEach(function (name) {
       var el = display.querySelector('input[name="aq_' + name + '"]:checked');
-      if (!el) out[name] = null;
-      else out[name] = (el.value === 'prefer_not') ? 'prefer_not' : parseInt(el.value, 10);
+      out[name] = el ? parseInt(el.value, 10) : null;
     });
     return out;
   }
 
+  // Complete when the three required answers are given.
   function _complete(a) {
-    var keys = ['words'].concat(TEXT_QUESTIONS, ['tone', 'intensity']);
-    for (var i = 0; i < keys.length; i++) {
-      if (a[keys[i]] === null || a[keys[i]] === undefined || a[keys[i]] === '') return false;
+    for (var i = 0; i < REQUIRED.length; i++) {
+      var v = a[REQUIRED[i]];
+      if (v === null || v === undefined || v === '') return false;
     }
     return true;
   }
@@ -202,15 +205,6 @@ var EpisodesPhase = (function () {
         var btn = document.getElementById('episode-continue');
 
         if (recalled) {
-          // Prefer not to say empties and disables its text field.
-          TEXT_QUESTIONS.forEach(function (n) {
-            var pn = document.getElementById('aq_' + n + '_pn');
-            var f  = document.getElementById('aq_' + n);
-            pn.addEventListener('change', function () {
-              if (pn.checked) f.value = '';
-              f.disabled = pn.checked;
-            });
-          });
           var update = function () {
             var ok = _complete(_read(display));
             btn.disabled = !ok;

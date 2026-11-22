@@ -325,6 +325,8 @@ var ParticipantID = (function () {
                        ? (inResultsText ? T.optional_note_results_file
                                         : T.optional_note)
                        : ''))) +
+                // Every variant: personal details stay with the team.
+                T.privacy +
                 '</div>',
       html: fields,
       button_label: T.button,

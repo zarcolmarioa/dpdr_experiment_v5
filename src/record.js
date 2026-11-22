@@ -299,6 +299,11 @@ var Record = (function () {
       N_orig:            row.N_orig,
       includes_original: row.includes_original,
       display_px:        CONFIG.display.image_px,
+      // Practice display, set by pairs.js on practice rows; these defaults
+      // stand on main and catch rows.
+      practice_feedback: false,              // feedback screen after this trial
+      feedback_display:  '',                 // 'chosen_only' | 'outline' | ''
+      arrows_shown:      false,              // arrow keys under the images
     };
   }
 

@@ -102,6 +102,28 @@ var Validate = (function () {
   // A bracketed gap such as [researcher names] or [TO COMPLETE after pilot].
   var PLACEHOLDER = /\[[^\]]+\]/;
 
+  // Dashes are not used in participant text, in either language: em dash,
+  // en dash, horizontal bar, and their HTML forms. (The minus sign of the
+  // tone scale is drawn by episodes.js and the Japanese long vowel mark
+  // \u30fc is not a dash; neither is matched.)
+  var DASH = /[\u2014\u2013\u2015]|&mdash;|&ndash;|&horbar;|&#8212;|&#8211;|&#8213;|&#x201[45];|&#x2015;/i;
+
+  // A hyphenated English word ("one-minute"); to be rephrased if possible.
+  var HYPHENATED = /[A-Za-z]+-[A-Za-z]+/;
+
+  // The set-up screens give neutral reasons only: they never mention the
+  // pictures (that could bias the answers).
+  var PICTURE_WORDS = /picture|image|photo|画像|写真/i;
+  var NEUTRAL_SCREENS = ['screen.fs_body', 'screen.small_body',
+                         'calibration.setup_title', 'calibration.setup_body',
+                         'calibration.brightness_intro', 'calibration.brightness_charger',
+                         'calibration.brightness_auto', 'calibration.brightness_lighting',
+                         'calibration.brightness_checkbox', 'calibration.lighting_checkbox'];
+
+  // The message after the first practice trial confirms the participant's
+  // own choice; it must never read as a correct answer.
+  var CORRECT_WORDS = /\bcorrect\b|right answer|正解|不正解/i;
+
   // -----------------------------------------------------------------------
   // Small helpers.
   // -----------------------------------------------------------------------
@@ -728,6 +750,56 @@ var Validate = (function () {
         need(lang, 'TEXT.episodes.questions.' + q + '.label',
              _get(T, 'episodes.questions.' + q + '.label'));
       });
+      // Episode-keyed practice texts and the first-trial message.
+      EPISODES.forEach(function (ep) {
+        ['body', 'body_b2', 'first_feedback'].forEach(function (k) {
+          need(lang, 'TEXT.practice.' + k + '.' + ep, _get(T, 'practice.' + k + '.' + ep));
+        });
+        var fbm = String(_get(T, 'practice.first_feedback.' + ep) || '');
+        if (CORRECT_WORDS.test(fbm)) {
+          errors.push(lang + ': TEXT.practice.first_feedback.' + ep + ' must confirm ' +
+                      'the participant\'s own choice, not a correct answer.');
+        }
+      });
+      ['keys_line', 'count_line', 'intro_b2', 'continue_hint', 'end_title',
+       'end_body', 'end_body_b2', 'end_hint'].forEach(function (k) {
+        need(lang, 'TEXT.practice.' + k, _get(T, 'practice.' + k));
+      });
+      if (String(_get(T, 'practice.count_line') || '').indexOf('{N}') === -1) {
+        errors.push(lang + ': TEXT.practice.count_line must give the number of ' +
+                    'practice trials ({N}).');
+      }
+      ['end_body', 'end_body_b2'].forEach(function (k) {
+        if (/\{TOTAL\}|\{N\}/.test(String(_get(T, 'practice.' + k) || ''))) {
+          errors.push(lang + ': TEXT.practice.' + k + ' gives a number of trials; ' +
+                      'the end of the practice states no count or duration.');
+        }
+      });
+      // Set-up, brightness, participant details, episode questions.
+      ['calibration.setup_title', 'calibration.setup_body',
+       'calibration.brightness_title', 'calibration.brightness_intro',
+       'calibration.brightness_charger', 'calibration.brightness_auto',
+       'calibration.brightness_lighting', 'calibration.brightness_checkbox',
+       'calibration.lighting_checkbox', 'id.privacy',
+       'episodes.optional_tag', 'episodes.questions_intro',
+       'episodes.incomplete'].forEach(function (k) {
+        need(lang, 'TEXT.' + k, _get(T, k));
+      });
+      NEUTRAL_SCREENS.forEach(function (k) {
+        if (PICTURE_WORDS.test(String(_get(T, k) || '').replace(/<[^>]+>/g, ' '))) {
+          errors.push(lang + ': TEXT.' + k + ' mentions the pictures. The set-up ' +
+                      'screens give neutral reasons only.');
+        }
+      });
+
+      // No dashes anywhere in participant text.
+      _strings(T, 'TEXT', [], []).concat(_strings(W, 'WORDS', [], [])).forEach(function (s) {
+        if (DASH.test(s.value)) {
+          errors.push(lang + ': ' + s.path + ' contains a dash. Use a comma, ' +
+                      'parentheses or a full stop instead.');
+        }
+      });
+
       need(lang, 'TEXT.practice.question_changed', _get(T, 'practice.question_changed'));
       if (String(_get(T, 'practice.question_changed') || '').indexOf('{QUESTION}') === -1) {
         errors.push(lang + ': TEXT.practice.question_changed must show the new ' +
@@ -790,6 +862,16 @@ var Validate = (function () {
       if (opts.production) errors.push(msg); else warnings.push(msg);
     }
 
+    // Hyphenated English words: rephrase where possible.
+    var hy = [];
+    _strings(TE, 'TEXT', [], []).concat(_strings(WE, 'WORDS', [], [])).forEach(function (s) {
+      if (HYPHENATED.test(s.value.replace(/<[^>]+>/g, ' '))) hy.push(s.path);
+    });
+    if (hy.length) {
+      warnings.push('Hyphenated word in English text (rephrase if possible): ' +
+                    hy.join(', '));
+    }
+
     // Visual words in English instruction text. The rated words and the
     // questionnaire items are exempt.
     var hits = [];
@@ -850,6 +932,14 @@ var Validate = (function () {
                         'run like this are not registered sessions.');
         }
       });
+    }
+
+    // The chosen-only display after the first practice trial of a block.
+    var ff = cfg.timing && cfg.timing.first_feedback_ms;
+    if (!(typeof ff === 'number' && ff > 0)) {
+      errors.push('CONFIG.timing.first_feedback_ms must be a positive number of ' +
+                  'milliseconds (the chosen-only display after the first practice ' +
+                  'trial). It is ' + ff + '.');
     }
 
     // Rest.

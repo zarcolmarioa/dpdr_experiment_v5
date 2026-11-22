@@ -16,20 +16,29 @@
 // levels at all — which would look like "this person doesn't track fog"
 // rather than "this person couldn't see the fog".
 //
-// The continue button stays disabled until the checkbox is ticked, so the
-// participant has to act rather than click through.
+// The continue button stays disabled until BOTH checkboxes are ticked, so
+// the participant has to act rather than click through.
 //
-// VIEWING CONDITIONS NOTE (brightness_filters)
-// --------------------------------------------
-// A short paragraph under the brightness request asks participants, if
-// they can, to switch off night mode, blue-light or colour filters, and
-// tells them not to worry if they do not know whether these are on or how
-// to switch them off. Such filters shift colour, which is one of the two
-// manipulated features. Nothing about it is confirmed or recorded: the
-// checkbox is about brightness only.
+// WHAT PARTICIPANTS ARE SHOWN
+// ---------------------------
+// The screen never mentions the pictures or how they differ (that could
+// bias the answers); it gives a neutral reason ("so that the study is
+// shown under similar conditions for everyone"). Below the request for
+// maximum brightness, three short paragraphs:
+//   - charger: devices dim the screen on battery;
+//   - automatic features: switch off automatic brightness, True Tone,
+//     Night Shift or night mode, blue light filters and battery saver if
+//     possible (they shift brightness or colour, one of the two
+//     manipulated features); participants who do not know may continue;
+//   - lighting: good, steady room lighting, no changing daylight or light
+//     falling on the screen, because screens adjust to room light.
+// Then two required checkboxes:
+//   - "My screen brightness is set to maximum."      brightness_confirmed
+//   - "The room I am in has good, steady lighting."  lighting_confirmed
 //
 // OUTPUT (jsPsych data, session-level):
 //   brightness_confirmed  bool
+//   lighting_confirmed    bool
 // =============================================================================
 
 var BrightnessConfirmation = (function () {
@@ -46,50 +55,51 @@ var BrightnessConfirmation = (function () {
 
         display.innerHTML =
           '<div class="calibration-card">' +
-
           '<h2>' + T.brightness_title + '</h2>' +
-
           T.brightness_intro +
-
-          // Viewing-conditions note. Not confirmed, not recorded.
-          '<div class="calib-note">' + T.brightness_filters + '</div>' +
-
+          '<div class="calib-note">' +
+          T.brightness_charger + T.brightness_auto + T.brightness_lighting +
+          '</div>' +
           '<label class="check-line">' +
           '<input type="checkbox" id="brightness-checkbox">' +
           '<span>' + T.brightness_checkbox + '</span>' +
           '</label>' +
-
+          '<label class="check-line">' +
+          '<input type="checkbox" id="lighting-checkbox">' +
+          '<span>' + T.lighting_checkbox + '</span>' +
+          '</label>' +
           '<div class="btn-row">' +
           '<button id="brightness-continue-btn" class="calib-btn" ' +
           'disabled style="opacity:0.35; cursor:not-allowed;">' +
           T.button_continue +
           '</button>' +
           '</div>' +
-
           '</div>';
 
-        var checkbox    = document.getElementById('brightness-checkbox');
+        var boxB        = document.getElementById('brightness-checkbox');
+        var boxL        = document.getElementById('lighting-checkbox');
         var continueBtn = document.getElementById('brightness-continue-btn');
 
-        checkbox.addEventListener('change', function () {
-          if (checkbox.checked) {
-            continueBtn.disabled      = false;
-            continueBtn.style.opacity = '1';
-            continueBtn.style.cursor  = 'pointer';
-          } else {
-            continueBtn.disabled      = true;
-            continueBtn.style.opacity = '0.35';
-            continueBtn.style.cursor  = 'not-allowed';
-          }
-        });
+        function update() {
+          var ok = boxB.checked && boxL.checked;
+          continueBtn.disabled      = !ok;
+          continueBtn.style.opacity = ok ? '1' : '0.35';
+          continueBtn.style.cursor  = ok ? 'pointer' : 'not-allowed';
+        }
+        boxB.addEventListener('change', update);
+        boxL.addEventListener('change', update);
 
         continueBtn.addEventListener('click', function () {
-          var confirmed = checkbox.checked;
-          jsPsych.data.addProperties({ brightness_confirmed: confirmed });
-          console.log('[Brightness] confirmed: ' + confirmed);
+          if (!(boxB.checked && boxL.checked)) return;
+          jsPsych.data.addProperties({
+            brightness_confirmed: boxB.checked,
+            lighting_confirmed:   boxL.checked,
+          });
+          console.log('[Brightness] confirmed: ' + boxB.checked +
+                      ', lighting: ' + boxL.checked);
           display.innerHTML = '';
           done();
-        }, { once: true });
+        });
       },
 
       data: { block: 'calibration_brightness' },

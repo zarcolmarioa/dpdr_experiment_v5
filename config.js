@@ -361,7 +361,7 @@ var CONFIG = {
   //    1. consent                     blocks.consent
   //    2. full screen + window check  calibration.fullscreen / screen_check
   //    3. participant ID              participant.collect_*
-  //    4. brightness                  calibration.brightness
+  //    4. set-up, brightness          calibration.setup / brightness
   //    5. gamma matching              calibration.gamma
   //    6. episode selection           blocks.episodes
   //    7. block 1: reinstatement, practice, 200 trials with breaks
@@ -401,17 +401,17 @@ var CONFIG = {
   // episode), one screen asks:
   //
   //   words      a few words to identify it      free text, REQUIRED
-  //   when       When was it?                    free text or Prefer not to say
-  //   duration   How long did it last?           free text or Prefer not to say
-  //   where      Where were you?                 free text or Prefer not to say
-  //   tone       unpleasant ... pleasant         -3 .. +3 or Prefer not to say
-  //   intensity  emotional intensity             0 .. 6  or Prefer not to say
+  //   when       When was it?                    free text, optional
+  //   duration   How long did it last?           free text, optional
+  //   where      Where were you?                 free text, optional
+  //   tone       unpleasant ... pleasant         -3 .. +3, REQUIRED
+  //   intensity  emotional intensity             0 .. 6, REQUIRED
   //
-  // Every question must be answered (Prefer not to say counts as an
-  // answer), so nobody skips one by accident and nobody is forced to
-  // disclose. Continue stays disabled until all are answered. The
-  // expectation block (controls) has no questions: its screen shows the
-  // short description of derealization.
+  // The scales have no default, and Continue stays disabled until the
+  // words, the tone and the intensity are answered. The optional questions
+  // are marked "(optional)"; a blank one is saved as an empty cell. There
+  // is no "Prefer not to say". The expectation block (controls) has no
+  // questions: its screen shows the short description of derealization.
   //
   // Answers are stamped on every row as ep_<episode>_<question>. See
   // DATA_DICTIONARY.md §6.
@@ -483,11 +483,19 @@ var CONFIG = {
     screen_check: true,   // window check: HARD STOP if the trial layout
                           // would be cut off (see display, above)
 
-    // Both matter more here than in most experiments, because the
-    // manipulations ARE saturation and shadow lifting — see the module
-    // headers in src/calibration/. Neither lets you correct anything;
-    // both give you a covariate.
-    brightness:   true,   // ask for maximum screen brightness
+    // Set-up screen before the brightness screen: position of the computer
+    // and no phone or other devices (src/calibration/setup.js). No
+    // checkbox; one row with block 'setup'.
+    setup:        true,
+
+    // Brightness and gamma matter more here than in most experiments,
+    // because the manipulations ARE saturation and shadow lifting (see the
+    // module headers in src/calibration/). Neither lets you correct
+    // anything; both give you a covariate. Neither screen mentions the
+    // pictures.
+    brightness:   true,   // maximum screen brightness and steady room
+                          // lighting: two required checkboxes, recorded
+                          // as brightness_confirmed / lighting_confirmed
     gamma:        true,   // 3x luminance match, ~2 minutes
 
     // 'split_field' (left checkerboard | right grey) or 'centre_surround'
@@ -505,8 +513,16 @@ var CONFIG = {
 
     // Practice feedback: the chosen image is outlined for this long, after
     // each practice trial that gets feedback (design.json: practice_
-    // feedback_by_block_position, practice_feedback_trials).
+    // feedback_by_block_position, practice_feedback_trials), except the
+    // first of the block.
     practice_feedback_ms: 900,
+
+    // First practice trial of a block with feedback: after the response,
+    // only the chosen image stays on screen, with a message confirming the
+    // participant's choice (practice.first_feedback.<episode>), for this
+    // long; then the next practice trial starts. Recorded as
+    // feedback_display = 'chosen_only' on that trial's row.
+    first_feedback_ms: 3000,
 
     // The fixed rest between the two blocks. A countdown is shown, and
     // Continue appears only when it reaches zero.

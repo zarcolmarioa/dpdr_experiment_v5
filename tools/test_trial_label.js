@@ -224,14 +224,17 @@ async function autopilot(page, opts = {}) {
           await page.click('#jspsych-fullscreen-btn'); break;
         case 'participant_id':
           await page.click('#jspsych-survey-html-form-next'); break;
+        case 'setup':
+          await page.click('#setup-continue-btn'); break;
         case 'calibration_brightness':
-          await page.click('#brightness-checkbox'); await page.click('#brightness-continue-btn'); break;
+          await page.click('#brightness-checkbox'); await page.click('#lighting-checkbox');
+          await page.click('#brightness-continue-btn'); break;
         case 'episode':
           await page.waitForSelector('#episode-continue');
           if (await page.$('#aq_words')) {
             await page.fill('#aq_words', 'test words');
             await page.fill('#aq_when', 'last month');
-            await page.click('#aq_duration_pn');
+            // duration left blank: optional
             await page.fill('#aq_where', 'at home');
             await page.click('input[name="aq_tone"][value="0"]');
             await page.click('input[name="aq_intensity"][value="3"]');
@@ -371,7 +374,7 @@ function labelInData(rows, labels) {
       check('debug ' + debug + ': refused before the consent screen' +
             (debug ? ', naming CONFIG.dev.trial_label' : ' (neutral error screen)'),
             !consent && (debug ? /Validation failed[\s\S]*CONFIG\.dev\.trial_label/.test(text)
-                               : /Something went wrong/.test(text)),
+                               : /An error has occurred/.test(text)),
             text.slice(0, 300));
       await page.context().close();
     }

@@ -609,7 +609,7 @@ var TEXT_EN = {
                     'are used only to contact you about this study and, if you ' +
                     'do not provide an ID, to link your answers to you.</p>',
     // Shown on this screen in every variant (with or without an ID, either
-    // storage), below the fields.
+    // storage), at the end of the text above the fields.
     privacy:        '<p>Your personal details will not be shared with anyone ' +
                     'outside the research team.</p>',
     name_label_plain:  'Name',

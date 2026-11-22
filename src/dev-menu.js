@@ -46,7 +46,7 @@ var DevMenu = (function () {
   var BLOCK_SWITCHES = Object.keys(BLOCK_DEFAULTS).filter(function (k) {
     return typeof BLOCK_DEFAULTS[k] === 'boolean';
   });
-  var CALIB_KEYS     = ['fullscreen', 'screen_check', 'brightness', 'gamma'];
+  var CALIB_KEYS     = ['fullscreen', 'screen_check', 'setup', 'brightness', 'gamma'];
   var CALIB_DEFAULTS = {};
   CALIB_KEYS.forEach(function (k) { CALIB_DEFAULTS[k] = CONFIG.calibration[k]; });
 
@@ -144,19 +144,20 @@ var DevMenu = (function () {
     {
       id: 'calibration',
       label: 'Calibration only',
-      note: 'Brightness (with the viewing-conditions note) and the 3&times; ' +
-            'gamma match. ~3 minutes.',
+      note: 'The set-up screen, brightness (charger, automatic features, ' +
+            'lighting, two required checkboxes) and the 3&times; gamma match. ' +
+            '~3 minutes.',
       apply: function () {
-        return _merge(_only([], SCREEN.concat(['brightness', 'gamma']), []),
+        return _merge(_only([], SCREEN.concat(['setup', 'brightness', 'gamma']), []),
                       { platform: 'local', limits: NO_LIMITS });
       },
     },
     {
       id: 'episodes',
       label: 'Episode screens only',
-      note: 'The two episode screens for the chosen group: identifying words ' +
-            'and the five recall questions (Continue disabled until all are ' +
-            'answered).',
+      note: 'The two episode screens for the chosen group: identifying words, ' +
+            'three optional questions and the two required scales (Continue ' +
+            'disabled until the words and both scales are answered).',
       apply: function () {
         return _merge(_only(['episodes'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
