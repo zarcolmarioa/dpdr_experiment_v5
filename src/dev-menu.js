@@ -280,9 +280,10 @@ var DevMenu = (function () {
             summary.images + ' images</td></tr>';
     html += '<tr><th>per block</th><td>' + summary.main_per_block + ' main trials (' +
             summary.analysed_per_block + ' analysed); practice ' +
-            summary.practice.join(' / ') + ' trials, feedback ' +
-            summary.practice_feedback.join(' / ') + ' (config.js overrides ' +
-            'design.json)</td></tr>';
+            (summary.practice || ['?', '?']).join(' / ') + ' trials, feedback ' +
+            (summary.practice_feedback || ['?', '?']).join(' / ') + ' on ' +
+            (summary.practice_feedback_trials || ['?', '?']).join(' / ') +
+            ' trials (design.json)</td></tr>';
     html += '<tr><th>language</th><td><code>' + _esc(summary.language) + '</code></td></tr>';
     html += '<tr><th>group</th><td>' + (group ? '<code>' + _esc(group) + '</code>'
               : '<b class="dev-missing">none &mdash; choose one below</b>') + '</td></tr>';
@@ -381,9 +382,11 @@ var DevMenu = (function () {
               '> block position ' + p + '</label>';
     });
     html += '</div>' +
-            '<p>Main trials per block: <input id="dev-n" type="number" min="0" max="200" ' +
-            'value="0"> (0 = all 200) &nbsp; practice per block: <input id="dev-np" ' +
-            'type="number" min="0" max="6" value="0"> (0 = config) &nbsp; ' +
+            '<p>Main trials per block: <input id="dev-n" type="number" min="0" max="' +
+            summary.main_per_block + '" value="0"> (0 = all ' + summary.main_per_block +
+            ') &nbsp; practice per block: <input id="dev-np" type="number" min="0" max="' +
+            Math.max.apply(null, summary.practice || [0]) + '" value="0"> (0 = all, ' +
+            'design.json) &nbsp; ' +
             '<label class="dev-inline"><input id="dev-upload" type="checkbox"> upload (' +
             _esc(_uploadPlatform()) + ')</label> ' +
             '<button id="dev-run-custom"' + (ready ? '' : ' disabled') + '>Run</button></p>' +
