@@ -9,23 +9,28 @@
  * failed, shown on screen instead of starting the study. In production a
  * failure shows a neutral error rather than running a broken session.
  *
- * The v5b package is registered and frozen, so departures from it are
- * ERRORS, not warnings. Three groups of checks, each a pure function so
- * tools/check_package.js can run the same code in Node:
+ * The package (v5c_180) is frozen, so departures from it are ERRORS, not
+ * warnings. Every count comes from the package's own design.json; nothing
+ * here is written for a particular package. Three groups of checks, each a
+ * pure function so tools/check_package.js can run the same code in Node:
  *
  *   checkPackage(pkg, cfg)   the package against design.json: every list
- *                            (200 rows: counts per type, 180 analysed, 15
- *                            consistency with repeat_of / repeat_of_item,
- *                            5 catch rows, catch_mode), the catch targets
- *                            per block position, the break points, both
- *                            practice files (and that each has at least as
- *                            many rows as config.js's practice override
- *                            asks for), every image of every list and
- *                            practice row in preload.json, and 64
- *                            assignment rows per group whose episodes,
- *                            lists, sets and practice files match the
- *                            group and the design, balanced over the 16
- *                            cells.
+ *                            (main_trials_per_block rows: counts per type
+ *                            and analysed from counts_per_block, consistency
+ *                            repeats by type with repeat_of /
+ *                            repeat_of_item, catch rows and catch_mode), the
+ *                            catch targets per block position, the break
+ *                            points, the practice settings (practice_by_
+ *                            block, practice_feedback_by_block_position,
+ *                            practice_feedback_trials: present and valid)
+ *                            and both practice files (exactly that many
+ *                            rows), preload.json equal to the images the
+ *                            list and practice rows show, no image of an
+ *                            excluded scene and excluded_scenes.scenes_used
+ *                            scenes in all, and slots_per_group assignment
+ *                            rows per group whose episodes, lists, sets and
+ *                            practice files match the group and the design,
+ *                            balanced over the 16 cells.
  *   checkText(texts, cfg, design, opts)
  *                            both languages have the same keys; every
  *                            group- and episode-dependent string exists in
@@ -34,7 +39,7 @@
  *                            English instructions; no placeholder left in
  *                            production.
  *   checkConfig(cfg, pkg, opts)
- *                            the practice override, the rest, the limits and
+ *                            the rest, the limits and
  *                            block positions (index.html refuses shortened
  *                            runs and single blocks), the dev trial label
  *                            (index.html refuses it), consent.
@@ -151,12 +156,15 @@ var Validate = (function () {
     return c;
   }
 
-  // The practice size and feedback for a block position: config.js's
-  // override, else design.json.
-  function _practiceCount(cfg, design, p) {
-    var o = (cfg.practice && cfg.practice.trials_by_block_position) || {};
-    if (o[p] !== undefined) return o[p];
-    return (design.practice_by_block || [])[p - 1];
+  function _wholeNumber(n, min) {
+    return typeof n === 'number' && Math.floor(n) === n && n >= min;
+  }
+
+  // The scene of an image: the file name up to '__c'.
+  function _scene(path) {
+    var f = String(path || '').split('/').pop();
+    var i = f.indexOf('__c');
+    return i > 0 ? f.slice(0, i) : f;
   }
 
   // =======================================================================
@@ -434,8 +442,41 @@ var Validate = (function () {
     });
 
     // --- practice --------------------------------------------------------
+    // design.json is the only source (there is no override in config.js):
+    // each key must be present and valid, and each practice file must have
+    // exactly practice_by_block rows.
     var P = D.practice || {};
+    var pbb = D.practice_by_block;
+    var pfb = D.practice_feedback_by_block_position;
+    var pft = D.practice_feedback_trials;
+    if (!Array.isArray(pbb)) {
+      errors.push('design.json has no practice_by_block (practice trials before each ' +
+                  'block). The practice cannot be set up.');
+    }
+    if (!pfb || typeof pfb !== 'object') {
+      errors.push('design.json has no practice_feedback_by_block_position (feedback ' +
+                  'before each block: true / false). The practice cannot be set up.');
+    }
+    if (!_wholeNumber(pft, 0)) {
+      errors.push('design.json has no valid practice_feedback_trials (how many practice ' +
+                  'trials of a block with feedback get it: a whole number of 0 or more); ' +
+                  'it is ' + JSON.stringify(pft) + '. The practice cannot be set up.');
+    }
     [1, 2].forEach(function (p) {
+      var n = Array.isArray(pbb) ? pbb[p - 1] : undefined;
+      if (Array.isArray(pbb) && !_wholeNumber(n, 1)) {
+        errors.push('design.json practice_by_block has no valid entry for block ' +
+                    'position ' + p + ' (a whole number of 1 or more): ' + JSON.stringify(n) + '.');
+      }
+      if (pfb && typeof pfb === 'object' && typeof pfb[p] !== 'boolean') {
+        errors.push('design.json practice_feedback_by_block_position has no true / ' +
+                    'false entry for block position ' + p + '.');
+      }
+      if (_wholeNumber(pft, 0) && _wholeNumber(n, 1) && pft > n) {
+        errors.push('design.json practice_feedback_trials is ' + pft + ', more than the ' +
+                    n + ' practice trials of block position ' + p + '.');
+      }
+
       var file = P[p];
       var rows = (pkg.practice || {})[file];
       var tag = 'Practice ' + file + ' (block position ' + p + ')';
@@ -444,17 +485,9 @@ var Validate = (function () {
                     ', or it did not load.');
         return;
       }
-      var designN = (D.practice_by_block || [])[p - 1];
-      if (rows.length !== designN) {
+      if (_wholeNumber(n, 1) && rows.length !== n) {
         errors.push(tag + ' has ' + rows.length + ' rows; design.json ' +
-                    'practice_by_block says ' + designN + '.');
-      }
-      var want = _practiceCount(cfg, D, p);
-      if (!(want >= 1) || Math.floor(want) !== want) {
-        errors.push('Practice trials for block position ' + p + ' must be a whole ' +
-                    'number of 1 or more (config.js: practice), not ' + want + '.');
-      } else if (rows.length < want) {
-        errors.push(tag + ' has ' + rows.length + ' rows; config.js asks for ' + want + '.');
+                    'practice_by_block says ' + n + '.');
       }
       rows.forEach(function (r) {
         if (r.trial_type !== 'practice' || r.analysed !== false) {
@@ -474,9 +507,42 @@ var Validate = (function () {
                   'preload.json, e.g. ' + np.slice(0, 3).join(', ') + ' (' +
                   notPreloaded[np[0]] + ').');
     }
+    // preload.json must be exactly the images shown: an extra entry would be
+    // downloaded by every participant for nothing (catch-only images are
+    // never shown, so they must not be listed).
     var unused = preload.filter(function (p) { return !used[p]; });
     if (unused.length) {
-      warnings.push(unused.length + ' image(s) in preload.json are never shown.');
+      errors.push(unused.length + ' image(s) in preload.json are never shown by a ' +
+                  'list or practice row, e.g. ' + unused.slice(0, 3).join(', ') + '.');
+    }
+
+    // --- scenes ----------------------------------------------------------
+    // No image of an excluded scene anywhere (catch rows included), and the
+    // number of scenes used as design.json states.
+    var EX = D.excluded_scenes;
+    if (EX && typeof EX === 'object') {
+      var excluded = _pathSet(EX.scenes || []);
+      var scenes = {}, hits = {};
+      var allRows = [];
+      Object.keys(pkg.lists || {}).forEach(function (id) { allRows = allRows.concat(pkg.lists[id]); });
+      Object.keys(pkg.practice || {}).forEach(function (f) { allRows = allRows.concat(pkg.practice[f]); });
+      allRows.forEach(function (r) {
+        [r.left_path, r.right_path].forEach(function (p) {
+          var sc = _scene(p);
+          scenes[sc] = true;
+          if (excluded[sc] || excluded[r.scene_id]) hits[sc || r.scene_id] = true;
+        });
+      });
+      var h = Object.keys(hits);
+      if (h.length) {
+        errors.push('Images of excluded scene(s) ' + h.join(', ') + ' are used by list or ' +
+                    'practice rows (design.json excluded_scenes).');
+      }
+      var nScenes = Object.keys(scenes).length;
+      if (typeof EX.scenes_used === 'number' && nScenes !== EX.scenes_used) {
+        errors.push('The lists and practice files use ' + nScenes + ' scenes; design.json ' +
+                    'excluded_scenes.scenes_used says ' + EX.scenes_used + '.');
+      }
     }
 
     // --- assignment ------------------------------------------------------
@@ -552,7 +618,7 @@ var Validate = (function () {
       }
       var cv = Object.keys(cells).map(function (k) { return cells[k]; });
       if (cv.length && (Math.min.apply(null, cv) !== Math.max.apply(null, cv))) {
-        errors.push(tag + ': the 64 rows are not balanced over block order x set ' +
+        errors.push(tag + ': the ' + per + ' rows are not balanced over block order x set ' +
                     'mapping x order (' + JSON.stringify(cells) + ').');
       }
     });
@@ -786,21 +852,6 @@ var Validate = (function () {
       });
     }
 
-    // Practice override: whole numbers and booleans for positions 1 and 2.
-    var pr = cfg.practice || {};
-    [1, 2].forEach(function (p) {
-      var n = (pr.trials_by_block_position || {})[p];
-      if (n !== undefined && !(n >= 1 && Math.floor(n) === n)) {
-        errors.push('CONFIG.practice.trials_by_block_position[' + p + '] must be a ' +
-                    'whole number of 1 or more, not ' + n + '.');
-      }
-      var f = (pr.feedback_by_block_position || {})[p];
-      if (f !== undefined && typeof f !== 'boolean') {
-        errors.push('CONFIG.practice.feedback_by_block_position[' + p + '] must be ' +
-                    'true or false.');
-      }
-    });
-
     // Rest.
     var rest = cfg.timing && cfg.timing.rest_ms;
     if (D.timing && D.timing.rest_between_blocks && !(rest > 0)) {
@@ -881,6 +932,9 @@ var Validate = (function () {
     _checkPlatform(P, errors, warnings);
 
     // --- Summary ---------------------------------------------------------
+    // (The practice values throw when design.json lacks them; that is
+    // already an error above, so the summary just shows null.)
+    function _orNull(f) { try { return f(); } catch (e) { return null; } }
     var D = data.design || {};
     var a = Loader.assignment();
     var summary = {
@@ -889,8 +943,13 @@ var Validate = (function () {
       lists:          Object.keys(data.lists || {}).length,
       main_per_block: D.main_trials_per_block,
       analysed_per_block: (D.counts_per_block || {}).analysed,
-      practice:       [Loader.practiceCount(1), Loader.practiceCount(2)],
-      practice_feedback: [Loader.practiceFeedback(1), Loader.practiceFeedback(2)],
+      practice:       _orNull(function () { return [Loader.practiceCount(1), Loader.practiceCount(2)]; }),
+      practice_feedback: _orNull(function () {
+        return [Loader.practiceFeedback(1), Loader.practiceFeedback(2)];
+      }),
+      practice_feedback_trials: _orNull(function () {
+        return [Loader.practiceFeedbackTrials(1), Loader.practiceFeedbackTrials(2)];
+      }),
       images:         (data.preload || []).length,
       language:       Loader.language(),
       group:          Loader.group(),
