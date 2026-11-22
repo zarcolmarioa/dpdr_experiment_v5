@@ -11,8 +11,8 @@ var CONFIG = {
   // Experiment identity — stamped onto every row of the output.
   // -----------------------------------------------------------------------
   experiment: {
-    name:    'derealization_v5b',
-    version: '1.0.0-v5b',
+    name:    'derealization_v5c',
+    version: '1.0.0-v5c',
   },
 
   // -----------------------------------------------------------------------
@@ -90,9 +90,9 @@ var CONFIG = {
   //
   // >>> TEST EXPERIMENT — REPLACE BEFORE DATA COLLECTION. <<<
   // This experiment_id (and contact_datapipe.experiment_id below) are the
-  // TEST experiments, kept so the v5b code can be tested end to end. Their
+  // TEST experiments, kept so the v5c code can be tested end to end. Their
   // data mix with older test sessions. Before collecting real data, create
-  // new DataPipe experiments for v5b and put their IDs here — see the
+  // new DataPipe experiments for v5c and put their IDs here — see the
   // "Before data collection" checklist in README.md.
   //
   // IMPORTANT: on the DataPipe dashboard, "Enable data collection?" must be
@@ -320,17 +320,26 @@ var CONFIG = {
   // the experiment needs:
   //
   //     data/sets/<set>/design.json       counts, groups, lists, catch
-  //                                       targets, breaks, rest
+  //                                       targets, breaks, rest, practice
+  //                                       (trials and feedback per block)
   //     data/sets/<set>/assignment.json   64 slots per group
   //     data/sets/<set>/lists/*.json      one block's 200 main trials each
   //     data/sets/<set>/practice/block1.json, block2.json
+  //     data/sets/<set>/items.csv         one row per item_id, for analysis
   //     data/sets/<set>/preload.json      every image a list or practice
-  //                                       row shows
+  //                                       row shows (catch rows show none)
   //     data/sets/<set>/stimuli/*.png
   //
-  // `v5b_180` is the registered two-block package. It is a FROZEN copy,
-  // byte-identical to the registered package, and must never be edited,
-  // re-encoded, resized or renamed. tools/check_package.js checks it.
+  // `v5c_180` is the two-block package in use: 8 lists of 200 main trials
+  // (180 analysed, 15 consistency repeats, 5 catch), 3 + 3 practice trials
+  // with feedback before both blocks, 632 images of 42 scenes (617 shown,
+  // 15 belonging only to catch rows, which show no images). It is a FROZEN
+  // copy, verified against the package's checksums, and must never be
+  // edited, re-encoded, resized or renamed. tools/check_package.js checks
+  // it. Its README.txt describes the design.
+  //
+  // `v5b_180` (the earlier package, 6 + 3 practice) is still in data/sets/
+  // but no longer used; it will be removed in a separate change.
   //
   // `set` is the default; ?set=<name> overrides it, but only names in
   // available_sets are accepted. Stamped on every row as `stimulus_set` and
@@ -338,8 +347,8 @@ var CONFIG = {
   // thing: it is recorded per row as `set`.)
   // -----------------------------------------------------------------------
   data: {
-    set:            'v5b_180',
-    available_sets: ['v5b_180'],
+    set:            'v5c_180',
+    available_sets: ['v5c_180'],
     sets_dir:       'data/sets/',
   },
 
@@ -411,28 +420,14 @@ var CONFIG = {
     text_max: 200,    // characters per free-text answer
   },
 
-  // -----------------------------------------------------------------------
-  // Practice. OVERRIDES design.json.
-  //
-  // design.json says 6 practice trials before block 1 with feedback and 3
-  // before block 2 without (practice_by_block, practice_feedback_by_block_
-  // position). The study runs 3 practice trials before EACH block, both
-  // with feedback:
-  //   block 1  the first 3 rows of practice/block1.json
-  //            (one sat_only, one fog_only, one together)
-  //   block 2  the 3 rows of practice/block2.json
-  // The package is not changed; the override is applied here. validate.js
-  // checks each practice file has at least this many rows. The values used
-  // are stamped on every row (practice_trials_b1, practice_trials_b2,
-  // practice_feedback_b1, practice_feedback_b2).
-  //
-  // Feedback = the chosen image is outlined for timing.practice_feedback_ms
-  // after EVERY practice trial of a block with feedback on.
-  // -----------------------------------------------------------------------
-  practice: {
-    trials_by_block_position:   { 1: 3, 2: 3 },
-    feedback_by_block_position: { 1: true, 2: true },
-  },
+  // Practice: NOT SET HERE. The number of practice trials before each block,
+  // whether they get feedback and on how many of them, come from the
+  // package's design.json (practice_by_block, practice_feedback_by_block_
+  // position, practice_feedback_trials) and its practice files; v5c_180:
+  // 3 + 3 trials, feedback on all 3 before both blocks. A package without
+  // these keys does not start (the loader and validate.js stop with an
+  // error naming the key). The values are stamped on every row
+  // (practice_trials_b1/_b2, practice_feedback_b1/_b2).
 
   // -----------------------------------------------------------------------
   // Developer trial label. DEV.HTML ONLY — leave false here.
@@ -473,7 +468,7 @@ var CONFIG = {
   // -----------------------------------------------------------------------
   limits: {
     max_trials:   0,   // 0 = all 200 main trials per block
-    max_practice: 0,   // 0 = all practice trials (see practice, above)
+    max_practice: 0,   // 0 = all practice trials (design.json)
   },
 
   // -----------------------------------------------------------------------
@@ -509,7 +504,8 @@ var CONFIG = {
     // design.json (timing.breaks_after_trial); not set here.
 
     // Practice feedback: the chosen image is outlined for this long, after
-    // every practice trial of a block with feedback (see practice, above).
+    // each practice trial that gets feedback (design.json: practice_
+    // feedback_by_block_position, practice_feedback_trials).
     practice_feedback_ms: 900,
 
     // The fixed rest between the two blocks. A countdown is shown, and

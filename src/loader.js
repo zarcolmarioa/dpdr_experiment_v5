@@ -2,10 +2,11 @@
  * loader.js — fetches the package, reads the link parameters, and exposes
  * the active text set.
  *
- * Reads, for the active package (v5b_180):
+ * Reads, for the active package (v5c_180):
  *   data/sets/<set>/design.json       the design: counts, groups and their
- *                                     episodes, lists, practice files, catch
- *                                     targets per block position, breaks
+ *                                     episodes, lists, practice files and
+ *                                     settings, catch targets per block
+ *                                     position, breaks
  *   data/sets/<set>/assignment.json   per group, 64 slots, each naming for
  *                                     block positions 1 and 2 the episode,
  *                                     the set, the list and the practice file
@@ -282,19 +283,51 @@ var Loader = (function () {
     return (g && G[g]) ? G[g].episodes.slice() : [];
   }
 
-  // Practice settings for a block position. CONFIG.practice OVERRIDES
-  // design.json (see config.js).
+  // -----------------------------------------------------------------------
+  // Practice settings for a block position, from design.json ONLY (there is
+  // no override in config.js):
+  //   practice_by_block[position - 1]                 trials before the block
+  //   practice_feedback_by_block_position[position]   feedback: true / false
+  //   practice_feedback_trials                        how many of a block's
+  //                                                   practice trials (the
+  //                                                   first n) get feedback
+  //                                                   when it is on
+  // A missing or invalid key is an ERROR, never a guess: these throw, naming
+  // the key. validate.js reports the same before anything is shown, so a
+  // participant never reaches a session built on a guessed practice.
+  // -----------------------------------------------------------------------
+  function _practiceError(what) {
+    return new Error('design.json of package "' + _activeSet() + '" ' + what +
+                     '. The practice cannot be set up; the package must state it.');
+  }
   function practiceCount(position) {
-    var o = (CONFIG.practice && CONFIG.practice.trials_by_block_position) || {};
-    if (o[position] !== undefined) return o[position];
-    var d = (_data.design && _data.design.practice_by_block) || [];
-    return d[position - 1];
+    var d = _data.design && _data.design.practice_by_block;
+    var n = Array.isArray(d) ? d[position - 1] : undefined;
+    if (typeof n !== 'number' || n < 1 || Math.floor(n) !== n) {
+      throw _practiceError('has no valid practice_by_block entry for block position ' +
+                           position + ' (a whole number of 1 or more)');
+    }
+    return n;
   }
   function practiceFeedback(position) {
-    var o = (CONFIG.practice && CONFIG.practice.feedback_by_block_position) || {};
-    if (o[position] !== undefined) return !!o[position];
-    var d = (_data.design && _data.design.practice_feedback_by_block_position) || {};
-    return !!d[position];
+    var d = _data.design && _data.design.practice_feedback_by_block_position;
+    var f = (d && typeof d === 'object') ? d[position] : undefined;
+    if (typeof f !== 'boolean') {
+      throw _practiceError('has no practice_feedback_by_block_position entry for ' +
+                           'block position ' + position + ' (true or false)');
+    }
+    return f;
+  }
+  // How many of the block's practice trials get feedback: 0 when feedback is
+  // off for the block, else practice_feedback_trials.
+  function practiceFeedbackTrials(position) {
+    var n = practiceCount(position);
+    var k = _data.design && _data.design.practice_feedback_trials;
+    if (typeof k !== 'number' || k < 0 || Math.floor(k) !== k || k > n) {
+      throw _practiceError('has no valid practice_feedback_trials (a whole number ' +
+                           'from 0 to the practice trials of a block, ' + n + ')');
+    }
+    return practiceFeedback(position) ? k : 0;
   }
 
   // Catch targets for a block position, from design.json.
@@ -314,9 +347,12 @@ var Loader = (function () {
   //   { position, episode, set, list, practiceFile,
   //     rows        the list's 200 main rows, in file order (shortened to
   //                 CONFIG.limits.max_trials on dev.html only)
-  //     practice    the practice rows (first practiceCount(position) rows
-  //                 of the file, shortened by max_practice on dev.html)
+  //     practice    the practice rows (the first practiceCount(position)
+  //                 rows of the file, which validate.js requires to be all
+  //                 of them; shortened by max_practice on dev.html)
   //     feedback    practice feedback on/off
+  //     feedbackTrials  how many of the practice trials (the first n) get
+  //                 feedback: 0 when off
   //     targets     the catch targets, in order }
   // null when the session has no valid assignment row.
   // -----------------------------------------------------------------------
@@ -345,6 +381,7 @@ var Loader = (function () {
       fullLength:   (_data.lists[b.list] || []).length,
       practice:     prac,
       feedback:     practiceFeedback(position),
+      feedbackTrials: practiceFeedbackTrials(position),
       targets:      catchTargets(position),
     };
   }
@@ -405,6 +442,7 @@ var Loader = (function () {
     block:               block,
     practiceCount:       practiceCount,
     practiceFeedback:    practiceFeedback,
+    practiceFeedbackTrials: practiceFeedbackTrials,
     catchTargets:        catchTargets,
     breaksAfter:         breaksAfter,
     limits:              limits,
