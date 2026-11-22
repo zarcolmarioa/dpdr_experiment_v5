@@ -1,5 +1,5 @@
 /* =========================================================================
- * text/en/instructions.js — every participant-facing string, English.
+ * text/en/instructions.js: every participant-facing string, English.
  *
  * Nothing displayed to a participant is written anywhere else in the code.
  * text/ja/instructions.js holds the same keys in Japanese; CONFIG.language
@@ -19,7 +19,7 @@
  * checks every one has every version in both languages. Everything else
  * is the same for both groups, so it must not presume either one.
  *
- * FRAMING RULES — these wordings are deliberate, not incidental:
+ * FRAMING RULES: these wordings are deliberate, not incidental:
  *
  *  - The experience is never DESCRIBED with visual words: foggy, blurred,
  *    faded, dull, colourless, unreal, dreamlike, flat, veiled, as if behind
@@ -30,7 +30,7 @@
  *    exempt: their wording is the measure.)
  *
  *  - THE INTERVIEW: only participants were interviewed. Only text that
- *    only participants see may mention it — strings keyed `participant`
+ *    only participants see may mention it: strings keyed `participant`
  *    or `derealization` (only participants have that episode). Controls
  *    must never see the word "interview". validate.js refuses any other
  *    string that mentions it, in either language.
@@ -47,7 +47,21 @@
  *    edited/distorted/altered" would convert a judgment about resemblance
  *    into a discrimination task, which measures something else entirely.
  *
- * PLACEHOLDERS — to be replaced before recruiting
+ *  - The set-up screens (full screen, window check, set-up, brightness)
+ *    never mention the pictures or how they might differ: that could bias
+ *    the answers. They give neutral reasons ("so that the study is shown
+ *    under similar conditions for everyone").
+ *
+ * STYLE
+ *  - Formal register throughout ("please", "you may", "provide"); no
+ *    casual phrases ("do not worry", "just", "go with").
+ *  - No dashes (em or en dash, in any form): commas, parentheses or full
+ *    stops instead. Hyphenated words are rephrased where possible ("a rest
+ *    of one minute"). validate.js refuses a dash in any participant text.
+ *  - Alignment is set by src/text-align.js and the CSS, not here: text
+ *    that fits on one line is centred, text that wraps is justified.
+ *
+ * PLACEHOLDERS, to be replaced before recruiting
  * -----------------------------------------------
  *  - consent.*      the whole consent text (PLACEHOLDER, see below)
  *  - state.items    the four questionnaire items (paste the exact wording)
@@ -70,7 +84,7 @@ var TEXT_EN = {
   },
 
   // --- Consent (the first screen) -------------------------------------------
-  // >>> PLACEHOLDER — NOT THE APPROVED WORDING. <<<
+  // >>> PLACEHOLDER: NOT THE APPROVED WORDING. <<<
   // Replace title/body/checkbox with the ethics-approved text, in this file
   // and in text/ja/instructions.js, and nowhere else. Every [bracketed gap]
   // must be filled: validate.js refuses a production session while any
@@ -83,9 +97,10 @@ var TEXT_EN = {
   //  - everything else is uploaded only at the very end; closing the page
   //    earlier saves nothing else;
   //  - the answers about the recalled episodes, including anything typed,
-  //    are stored WITH the responses; the few identifying words are
-  //    required, and every other episode question can be answered with
-  //    "Prefer not to say";
+  //    are stored WITH the responses; a few questions are about the
+  //    episodes, including how they felt emotionally (the identifying
+  //    words, the emotional tone and the intensity are required; when,
+  //    how long and where are optional);
   //  - controls are not told about any interview (they had none).
   //  - without a participant ID, the name and email are what link the
   //    responses to the person.
@@ -111,16 +126,16 @@ var TEXT_EN = {
       '[Whether anonymised data may be shared publicly, e.g. on Zenodo.]</p>' +
       '<p>As part of the study, you will be asked to write a few words of ' +
       'your own to identify each experience you bring to mind, and to answer ' +
-      'a few short questions about it, such as when and where it happened. ' +
-      'Each of these questions can be answered with &ldquo;Prefer not to ' +
-      'say&rdquo;. Your answers, including anything you type, are stored ' +
-      'with your responses, so please do not include names or other details ' +
-      'that could identify you or anyone else.</p>' +
+      'a few short questions about these experiences, including how they ' +
+      'felt emotionally. Some of these questions are optional. Your answers, ' +
+      'including anything you type, are stored with your responses, so ' +
+      'please do not include names or other details that could identify you ' +
+      'or anyone else.</p>' +
       '<p><b>Voluntary participation:</b> taking part is voluntary. You may ' +
       'stop at any time by closing this page. Your responses are saved only ' +
       'at the end of the study, so if you close the page before then, none of ' +
       'them are saved. The exception is your name and email address: they are ' +
-      'optional, and if you give them they are saved straight away, ' +
+      'optional, and if you provide them, they are saved immediately, ' +
       'separately from your responses, even if you do not finish. If you take ' +
       'part without a participant ID, your name and email address are what ' +
       'links your responses to you. ' +
@@ -148,7 +163,7 @@ var TEXT_EN = {
       '<p><b>Benefits:</b> there is no direct benefit to you. ' +
       '[Compensation, if any.]</p>' +
       '<p><b>Your data:</b> your responses are stored under a study ID. ' +
-      'If you give your name and email address, they are stored in the same ' +
+      'If you provide your name and email address, they are stored in the same ' +
       'file as your responses, which only the research team can access. ' +
       'Results are reported only for groups or without identifying ' +
       'information. [Storage period and who has access.] [Whether ' +
@@ -156,17 +171,17 @@ var TEXT_EN = {
       'email address are never shared.]</p>' +
       '<p>As part of the study, you will be asked to write a few words of ' +
       'your own to identify each experience you bring to mind, and to answer ' +
-      'a few short questions about it, such as when and where it happened. ' +
-      'Each of these questions can be answered with &ldquo;Prefer not to ' +
-      'say&rdquo;. Your answers, including anything you type, are stored ' +
-      'with your responses, so please do not include names or other details ' +
-      'that could identify you or anyone else.</p>' +
+      'a few short questions about these experiences, including how they ' +
+      'felt emotionally. Some of these questions are optional. Your answers, ' +
+      'including anything you type, are stored with your responses, so ' +
+      'please do not include names or other details that could identify you ' +
+      'or anyone else.</p>' +
       '<p><b>Voluntary participation:</b> taking part is voluntary. You may ' +
       'stop at any time by closing this page. Your responses are saved only ' +
       'at the end of the study, so if you close the page before then, none of ' +
       'them are saved. The same applies to your name and email address: they ' +
-      'are optional, and if you give them they are saved together with your ' +
-      'responses at the end. If you take ' +
+      'are optional, and if you provide them, they are saved together with ' +
+      'your responses at the end. If you take ' +
       'part without a participant ID, your name and email address are what ' +
       'links your responses to you. ' +
       '[How to withdraw data after submission.]</p>' +
@@ -200,11 +215,12 @@ var TEXT_EN = {
   // --- Episode selection (after calibration, before block 1) -------------
   // One screen per episode of the group (screens.<group>.<episode>). Each
   // RECALLED episode (not the expectation) asks for a few identifying
-  // words (required) and the five questions below, each of which must be
-  // answered — "Prefer not to say" is an answer. The questions only help
-  // bring the episode back: never how it felt or looked, nothing about
-  // clarity, vividness or colour. Keep the examples free of visual words
-  // and of anything identifying.
+  // words and the five questions below. REQUIRED: the words, the emotional
+  // tone and the intensity; OPTIONAL (may be left blank, marked with
+  // optional_tag): when, how long and where. The questions only help bring
+  // the episode back: nothing about how it looked, its clarity, vividness
+  // or colour. Keep the examples free of visual words and of anything
+  // identifying.
   // {DR_WORDS} = the participant's own words for the derealization episode.
   episodes: {
     screens: {
@@ -215,20 +231,23 @@ var TEXT_EN = {
             '<p>In the interview, you described an episode in which your ' +
             'surroundings felt different from usual. Please bring that ' +
             'episode to mind now.</p>' +
-            '<p>Write a few words below that will let you recognise it later, ' +
-            'such as where you were or what you were doing. The questions ' +
-            'after that are there to help you bring it back.</p>',
+            '<p>Please write a few words below that will allow you to ' +
+            'recognise it later, such as where you were or what you were ' +
+            'doing. The questions that follow are intended to help you ' +
+            'recall it.</p>',
         },
         ordinary: {
           title: 'An ordinary episode',
           body:
-            '<p>Now please bring to mind a different episode: one in a ' +
+            '<p>Please now bring to mind a different episode, in a ' +
             '<b>similar setting</b> to the episode you described in the ' +
-            'interview (<span class="ep-words">{DR_WORDS}</span>) &mdash; a ' +
-            'similar place, time of day and lighting &mdash; from <b>about as ' +
-            'long ago</b>, in which your surroundings looked <b>as usual</b>.</p>' +
-            '<p>Write a few words below that will let you recognise it later. ' +
-            'The questions after that are there to help you bring it back.</p>',
+            'interview (<span class="ep-words">{DR_WORDS}</span>), that is, ' +
+            'a similar place, time of day and lighting. It should be from ' +
+            '<b>about as long ago</b>, and your surroundings should have ' +
+            'looked <b>as usual</b>.</p>' +
+            '<p>Please write a few words below that will allow you to ' +
+            'recognise it later. The questions that follow are intended to ' +
+            'help you recall it.</p>',
         },
       },
       control: {
@@ -238,9 +257,10 @@ var TEXT_EN = {
             '<p>Please bring to mind an ordinary episode from the <b>last six ' +
             'months</b>: a time when you were somewhere and your surroundings ' +
             'looked as usual.</p>' +
-            '<p>Write a few words below that will let you recognise it later, ' +
-            'such as where you were or what you were doing. The questions ' +
-            'after that are there to help you bring it back.</p>',
+            '<p>Please write a few words below that will allow you to ' +
+            'recognise it later, such as where you were or what you were ' +
+            'doing. The questions that follow are intended to help you ' +
+            'recall it.</p>',
         },
         expectation: {
           title: 'Derealization',
@@ -257,8 +277,10 @@ var TEXT_EN = {
       hint:  'e.g. walking home after work',
     },
     questions_intro:
-      'Questions to help you bring it back. Please answer each one; if you ' +
-      'prefer not to answer, choose &ldquo;Prefer not to say&rdquo;.',
+      'The following questions are intended to help you recall the episode. ' +
+      'The questions marked as optional may be left blank.',
+    // Added after the label of each optional question.
+    optional_tag: '(optional)',
     questions: {
       when: {
         label: 'When was it?',
@@ -283,9 +305,9 @@ var TEXT_EN = {
         anchor_high: 'extremely intense',
       },
     },
-    prefer_not: 'Prefer not to say',
-    incomplete: 'Please answer every question to continue. ' +
-                '&ldquo;Prefer not to say&rdquo; counts as an answer.',
+    incomplete: 'To continue, please write a few words to identify the ' +
+                'episode and answer both questions about how it felt ' +
+                'emotionally.',
     button:     'Continue',
   },
 
@@ -299,14 +321,14 @@ var TEXT_EN = {
         '<p>In this part, please think of <b>the episode you described in ' +
         'the interview</b>, the one you called:</p>' +
         '<p><span class="ep-words">{WORDS}</span></p>' +
-        '<p>Bring it back to mind as well as you can: where you were, what ' +
-        'was around you, what you were doing.</p>',
+        '<p>Please bring it back to mind as well as you can: where you were, ' +
+        'what was around you and what you were doing.</p>',
       ordinary:
         '<p>In this part, please think of <b>the ordinary episode you ' +
         'described</b>, the one you called:</p>' +
         '<p><span class="ep-words">{WORDS}</span></p>' +
-        '<p>Bring it back to mind as well as you can: where you were, what ' +
-        'was around you, what you were doing.</p>',
+        '<p>Please bring it back to mind as well as you can: where you were, ' +
+        'what was around you and what you were doing.</p>',
       expectation:
         '<p>In this part, please imagine <b>how you think the surroundings ' +
         'look to someone experiencing derealization</b>.</p>' +
@@ -321,10 +343,11 @@ var TEXT_EN = {
   // countdown reaches zero.
   rest: {
     title:  'Rest',
-    body:   '<p>Please take a one-minute rest before the second part. You ' +
-            'may look away from the screen. Please stay in full screen.</p>',
+    body:   '<p>Please take a rest of one minute before the second part. You ' +
+            'may rest your eyes, but please avoid using your phone or other ' +
+            'devices. Please remain in full screen.</p>',
     wait:   'The Continue button will appear when the minute is over.',
-    done:   'You can continue when you are ready.',
+    done:   'Please continue when you are ready.',
     button: 'Continue',
   },
 
@@ -333,59 +356,120 @@ var TEXT_EN = {
   // deliberately unlike both the trials and the break screens.
   catch: {
     lead:        'Attention check',
-    instruction: 'Press the {KEYNAME} arrow key',
+    instruction: 'Please press the {KEYNAME} arrow key',
     key_up:      'UP',
     key_down:    'DOWN',
   },
 
   // --- Practice ---------------------------------------------------------
-  // The same for both groups: the task is described mechanically, and the
-  // question itself is the episode-dependent prompt above the pictures.
-  // {N} = practice trials in this block, {TOTAL} = main trials in this
-  // block, {QUESTION} = this block's question.
+  // EPISODE-DEPENDENT: the explanation before each block's practice is
+  // keyed by the block's episode (body.<episode> before block 1,
+  // body_b2.<episode> before block 2), as is the message after the first
+  // practice response (first_feedback.<episode>). The question itself is
+  // the episode-dependent prompt above the pictures.
+  // Screen before block 1's practice:  body.<episode>, keys_line, count_line.
+  // Screen before block 2's practice:  intro_b2, question_changed,
+  //                                    body_b2.<episode>, count_line.
+  // {N} = practice trials in this block, {QUESTION} = this block's question.
   practice: {
     title: 'The task',
-    body:
-      '<p>On each trial you will see two pictures of the same place, side ' +
-      'by side. The two pictures have been adjusted in different ways.</p>' +
-      '<p>A question is shown above the pictures. Choose the picture that ' +
-      'fits the question better.</p>' +
-      '<p>There is no right or wrong answer. Go with your first ' +
-      'impression.</p>' +
-      '<p>Use the <b>&#8592;</b> and <b>&#8594;</b> arrow keys to choose the ' +
-      'picture on the left or on the right.</p>' +
-      '<p>We will begin with {N} practice trials.</p>',
+    body: {
+      derealization:
+        '<p>Both pictures in each pair show <b>the same place</b>, which is ' +
+        '<b>not the place where your episode occurred</b>.</p>' +
+        '<p>The two pictures differ <b>only in how the place looks, not in ' +
+        'what it shows</b>.</p>' +
+        '<p>For each pair, bring the episode back to mind and recall your ' +
+        'surroundings as they appeared to you at that time. Then choose the ' +
+        'picture that is closer to how your surroundings appeared to you ' +
+        'then.</p>' +
+        '<p>There is no right or wrong answer. Please respond according to ' +
+        'your first impression.</p>',
+      ordinary:
+        '<p>Both pictures in each pair show <b>the same place</b>, which is ' +
+        '<b>not the place where your episode occurred</b>.</p>' +
+        '<p>The two pictures differ <b>only in how the place looks, not in ' +
+        'what it shows</b>.</p>' +
+        '<p>For each pair, bring the ordinary episode back to mind and recall ' +
+        'your surroundings as they appeared to you at that time. Then choose ' +
+        'the picture that is closer to how your surroundings appeared to you ' +
+        'then.</p>' +
+        '<p>There is no right or wrong answer. Please respond according to ' +
+        'your first impression.</p>',
+      expectation:
+        '<p>Both pictures in each pair show <b>the same place</b>. The two ' +
+        'pictures differ <b>only in how the place looks, not in what it ' +
+        'shows</b>.</p>' +
+        '<p>For each pair, imagine the surroundings of a person experiencing ' +
+        'derealization, as they would appear to that person. Then choose the ' +
+        'picture that is closer to how you think those surroundings appear to ' +
+        'them.</p>' +
+        '<p>There is no right or wrong answer. Please respond according to ' +
+        'your first impression.</p>',
+    },
+    keys_line:
+      '<p>Please use the <b>&#8592;</b> and <b>&#8594;</b> arrow keys to ' +
+      'choose the picture on the left or on the right.</p>',
+    count_line: '<p>We will begin with {N} practice trials.</p>',
+
     // Before block 2's practice.
-    body_b2:
-      '<p>The second part works the same way as the first. We will begin ' +
-      'with {N} practice trials.</p>',
+    intro_b2:
+      '<p>The second part works in the same way as the first.</p>',
     question_changed:
       '<p><b>The question has changed.</b> It is now:</p>' +
       '<p class="question-now">{QUESTION}</p>',
-    continue_hint: 'Press <b>SPACE</b> to begin the practice.',
+    body_b2: {
+      derealization:
+        '<p>As before, the pictures show places that are not where your ' +
+        'episode occurred, and they differ only in how the place looks. ' +
+        'Please bring the episode you described in the interview back to ' +
+        'mind, and choose the picture that is closer to how your surroundings ' +
+        'appeared to you at that time.</p>',
+      ordinary:
+        '<p>As before, the pictures show places that are not where your ' +
+        'episode occurred, and they differ only in how the place looks. ' +
+        'Please bring the ordinary episode you described back to mind, and ' +
+        'choose the picture that is closer to how your surroundings appeared ' +
+        'to you at that time.</p>',
+      expectation:
+        '<p>As before, the two pictures differ only in how the place looks. ' +
+        'Please imagine the surroundings of a person experiencing ' +
+        'derealization, and choose the picture that is closer to how you ' +
+        'think those surroundings appear to them.</p>',
+    },
+    continue_hint: 'Please press <b>SPACE</b> to begin the practice.',
 
-    // Shown after the first practice response of each block. Deliberately
-    // says nothing about WHY the participant chose what they chose.
-    feedback_first:
-      'You chose this one. There is no right or wrong answer &mdash; just ' +
-      'go with your impression.',
+    // After the FIRST practice response of each block, only the chosen
+    // picture stays on screen, with this message, for
+    // CONFIG.timing.first_feedback_ms; then the next practice trial starts.
+    // It confirms the participant's own choice, never a correct answer.
+    first_feedback: {
+      derealization:
+        'This is the picture you chose as closer to how your surroundings ' +
+        'appeared to you during that episode.',
+      ordinary:
+        'This is the picture you chose as closer to how your surroundings ' +
+        'appeared to you during the ordinary episode.',
+      expectation:
+        'This is the picture you chose as closer to how you think the ' +
+        'surroundings appear to a person experiencing derealization.',
+    },
 
     end_title: 'End of practice',
     end_body:
-      '<p>That is the end of the practice.</p>' +
-      '<p>The main part works the same way. It has {TOTAL} trials and takes ' +
-      'about [TO COMPLETE after pilot] minutes. There are short breaks along ' +
+      '<p>This is the end of the practice.</p>' +
+      '<p>The main part works in the same way. There are short breaks along ' +
       'the way.</p>' +
-      '<p><b>Occasionally a screen will appear with no pictures</b>, asking ' +
-      'you to press a particular arrow key. These check that you are still ' +
-      'reading the screen. Take your time on them &mdash; there is no time ' +
-      'limit, and you only get one press.</p>',
+      '<p><b>Occasionally, a screen without pictures will appear</b>, asking ' +
+      'you to press a particular arrow key. These screens check that you are ' +
+      'still reading the screen. Please take your time with them: there is ' +
+      'no time limit, and only one key press is accepted.</p>',
     end_body_b2:
-      '<p>That is the end of the practice.</p>' +
-      '<p>This part also has {TOTAL} trials, with short breaks along the way, ' +
-      'and occasional screens with no pictures asking you to press a ' +
-      'particular arrow key.</p>',
-    end_hint: 'Press <b>SPACE</b> to begin.',
+      '<p>This is the end of the practice.</p>' +
+      '<p>As in the first part, there are short breaks along the way, and ' +
+      'occasionally a screen without pictures will appear, asking you to ' +
+      'press a particular arrow key.</p>',
+    end_hint: 'Please press <b>SPACE</b> to begin.',
   },
 
   // --- Full screen and the window check ---------------------------------
@@ -394,63 +478,82 @@ var TEXT_EN = {
   screen: {
     fs_title:   'Full screen',
     fs_body:
-      '<p>This study runs in full screen, so that the pictures are shown at ' +
-      'the same size throughout.</p>' +
-      '<p>Please stay in full screen until the study ends.</p>',
+      '<p>This study runs in full screen, so that it is shown under similar ' +
+      'conditions for everyone.</p>' +
+      '<p>Please remain in full screen until the study ends.</p>',
     fs_button:  'Enter full screen',
 
     small_title: 'This window is too small for the study',
     small_body:
-      '<p>This study shows two pictures side by side at a fixed size, so ' +
-      'that everyone sees them in the same way. In this window, part of the ' +
-      'pictures or of the question would be cut off.</p>' +
+      '<p>This study requires a window of a minimum size, so that it is ' +
+      'shown under similar conditions for everyone. This window is smaller ' +
+      'than that.</p>' +
       '<p>Please make your browser window larger, or use a computer with a ' +
       'larger screen, and then open the link from your invitation again.</p>' +
       '<p>If your browser is zoomed in, setting the zoom back to 100% ' +
-      '(Ctrl + 0, or &#8984; + 0 on a Mac) may be enough.</p>',
+      '(Ctrl + 0, or &#8984; + 0 on a Mac) may be sufficient.</p>',
     small_size:
       'Your display area is {W} &times; {H} pixels. At least {MW} &times; ' +
       '{MH} is recommended.',
   },
 
   // --- Calibration ------------------------------------------------------
-  // Shown before the task. These screens exist because the manipulations
-  // are colour and local contrast, so the display is part of the
-  // measurement — see the module headers in src/calibration/.
+  // Shown before the task. The display is part of the measurement (see the
+  // module headers in src/calibration/), but these screens NEVER mention
+  // the pictures or how they differ: they give neutral reasons only.
   calibration: {
     button_continue: 'Continue',
 
+    // Set-up screen, before the brightness screen. No checkbox.
+    setup_title: 'Before you start',
+    setup_body:
+      '<p><b>Position:</b> please place the computer on a desk or table, ' +
+      'ideally with the screen at about eye level. If this is not possible, ' +
+      'please keep the same position and the same distance from the screen ' +
+      'throughout the study.</p>' +
+      '<p><b>Distractions:</b> please avoid looking at your phone or other ' +
+      'devices during the study, including during the breaks.</p>' +
+      '<p>This applies to laptops and desktop computers alike.</p>',
+
     brightness_title: 'Screen brightness',
     brightness_intro:
-      '<p>Some of the pictures in this study differ only in their darker ' +
-      'areas. If your screen is dimmed, those differences disappear.</p>' +
-      '<p>Please turn your screen brightness up to its <strong>highest ' +
-      'setting</strong> now, and leave it there for the whole session.</p>',
-    // Viewing-conditions note. Not confirmed, not recorded.
-    brightness_filters:
-      '<p>If you can, please also switch off night mode, blue-light filters ' +
-      'or colour filters on this device. If you do not know whether these ' +
-      'are on, or how to switch them off, do not worry and simply ' +
+      '<p>Please set your screen brightness to its <strong>highest ' +
+      'setting</strong> now, and leave it there for the whole session, so ' +
+      'that the study is shown under similar conditions for everyone.</p>',
+    brightness_charger:
+      '<p><b>Charger:</b> please connect the computer to its charger, ' +
+      'because many devices dim the screen when running on battery.</p>',
+    brightness_auto:
+      '<p><b>Automatic features:</b> if possible, please switch off ' +
+      'automatic brightness (also called adaptive or auto brightness), True ' +
+      'Tone, Night Shift or night mode, blue light filters and battery ' +
+      'saver. If you do not know whether these are on, you may ' +
       'continue.</p>',
+    brightness_lighting:
+      '<p><b>Lighting:</b> please sit in a room with good, steady lighting, ' +
+      'and avoid changing daylight or light falling directly on the screen. ' +
+      'Screens can adjust their brightness to the light in the room.</p>',
+    // Both boxes must be ticked to continue; both are recorded
+    // (brightness_confirmed, lighting_confirmed).
     brightness_checkbox:
       'My screen brightness is set to maximum.',
+    lighting_checkbox:
+      'The room I am in has good, steady lighting.',
 
     gamma_title: 'Screen calibration',
     gamma_intro:
       '<p>Next we will measure a property of your screen that affects how ' +
       'brightness is displayed. You will do a short matching task ' +
       '<strong>three times</strong>.</p>' +
-      '<p>Each time, you will see two patterns side by side. Adjust the ' +
-      'right one until the two look like the same shade of grey.</p>' +
-      '<p>Sitting back slightly, or squinting, can make the match easier ' +
-      'to judge.</p>',
+      '<p>Each time, you will see two patterns side by side. Please adjust ' +
+      'the right one until the two look like the same shade of grey.</p>',
     gamma_button: 'Begin',
     gamma_prompt:
-      'Adjust the square on the right until both squares look the same ' +
-      'shade of grey, then click <b>Confirm match</b>.',
+      'Please adjust the square on the right until both squares look the ' +
+      'same shade of grey, then click <b>Confirm match</b>.',
     gamma_confirm_button: 'Confirm match',
     gamma_progress:       'Match {N} of {TOTAL}',
-    gamma_hint:           'Drag the slider, or use the &larr; &rarr; keys.',
+    gamma_hint:           'Please drag the slider, or use the &larr; and &rarr; keys.',
     gamma_label_fixed:    'Reference',
     gamma_label_adjust:   'Adjust this one',
   },
@@ -461,23 +564,24 @@ var TEXT_EN = {
     title:          'Before we begin',
     body:           '<p>Please enter your participant ID from your invitation ' +
                     'email. If you opened this page from the link in the ' +
-                    'email, it is already filled in.</p>',
+                    'email, it has already been filled in.</p>',
     id_label:       'Participant ID',
     id_hint:        '<code>R_</code> followed by 15 letters and numbers. ' +
-                    'Capital and small letters matter.',
+                    'Capital and small letters are distinguished.',
     // Plain text: shown by the browser in a small bubble if the ID is wrong.
     invalid:        'This ID was not recognised. Please check your invitation ' +
-                    'email — capital and small letters matter.',
+                    'email. Capital and small letters are distinguished.',
     optional_note:  '<p>Your <b>name</b> and <b>email address</b> are ' +
-                    '<b>optional</b>. If you give them, they are stored ' +
+                    '<b>optional</b>. If you provide them, they are stored ' +
                     'separately from your answers and used only to contact ' +
                     'you about this study.</p>',
     // Pavlovia (contact_storage 'results_file'): kept with the answers.
     optional_note_results_file:
                     '<p>Your <b>name</b> and <b>email address</b> are ' +
-                    '<b>optional</b>. If you give them, they are stored with ' +
-                    'your answers, which only the research team can access, ' +
-                    'and used only to contact you about this study.</p>',
+                    '<b>optional</b>. If you provide them, they are stored ' +
+                    'with your answers, which only the research team can ' +
+                    'access, and used only to contact you about this ' +
+                    'study.</p>',
     name_label:     'Name (optional)',
     email_label:    'Email address (optional)',
     button:         'Continue',
@@ -486,22 +590,28 @@ var TEXT_EN = {
     // email address, are needed to continue.
     body_no_pid:    '<p>Please enter your participant ID from your invitation ' +
                     'email.</p>' +
-                    '<p>If you do not have it, enter your <b>name</b> and ' +
-                    '<b>email address</b> instead. Giving all three is best.</p>' +
+                    '<p>If you do not have it, please enter your <b>name</b> ' +
+                    'and <b>email address</b> instead. Providing all three is ' +
+                    'preferable.</p>' +
                     '<p>Your name and email address are stored separately from ' +
                     'your answers. They are used only to contact you about this ' +
-                    'study and, if you give no ID, to link your answers to ' +
-                    'you.</p>',
+                    'study and, if you do not provide an ID, to link your ' +
+                    'answers to you.</p>',
     // Pavlovia (contact_storage 'results_file'): kept with the answers.
     body_no_pid_results_file:
                     '<p>Please enter your participant ID from your invitation ' +
                     'email.</p>' +
-                    '<p>If you do not have it, enter your <b>name</b> and ' +
-                    '<b>email address</b> instead. Giving all three is best.</p>' +
+                    '<p>If you do not have it, please enter your <b>name</b> ' +
+                    'and <b>email address</b> instead. Providing all three is ' +
+                    'preferable.</p>' +
                     '<p>Your name and email address are stored with your ' +
                     'answers, which only the research team can access. They ' +
                     'are used only to contact you about this study and, if you ' +
-                    'give no ID, to link your answers to you.</p>',
+                    'do not provide an ID, to link your answers to you.</p>',
+    // Shown on this screen in every variant (with or without an ID, either
+    // storage), below the fields.
+    privacy:        '<p>Your personal details will not be shared with anyone ' +
+                    'outside the research team.</p>',
     name_label_plain:  'Name',
     email_label_plain: 'Email address',
     // Plain text: shown by the browser in a small bubble.
@@ -514,7 +624,7 @@ var TEXT_EN = {
 
     retry_title:    'That ID was not recognised',
     retry_body:     '<p>Please check your invitation email and try again.</p>',
-    retry_hint:     'Press <b>SPACE</b> to re-enter it.',
+    retry_hint:     'Please press <b>SPACE</b> to enter it again.',
   },
 
   // --- End of session ------------------------------------------------------
@@ -539,7 +649,7 @@ var TEXT_EN = {
                   '<p><b>Please do not close this page until the file has ' +
                   'downloaded.</b></p>',
     fail_button:  'Download my responses',
-    fail_done:    'The file has been downloaded. Thank you — once you have ' +
+    fail_done:    'The file has been downloaded. Thank you. Once you have ' +
                   'emailed it, you may close this page.',
   },
 
@@ -563,12 +673,13 @@ var TEXT_EN = {
 
   // --- Breaks -----------------------------------------------------------
   // {DONE} and {TOTAL} are filled in per block (200 main trials, breaks
-  // after trials 40, 80, 120 and 160 — design.json).
+  // after trials 40, 80, 120 and 160, from design.json).
   brk: {
     title: 'Short break',
     body: '<p>You have completed {DONE} of {TOTAL} trials in this part.</p>' +
-          '<p>Take a moment to rest if you like. Please stay in full screen.</p>',
-    hint: 'Press <b>SPACE</b> when you are ready to continue.',
+          '<p>You may take a moment to rest your eyes, but please avoid using ' +
+          'your phone or other devices. Please remain in full screen.</p>',
+    hint: 'Please press <b>SPACE</b> when you are ready to continue.',
   },
 
   // --- Preloading -------------------------------------------------------
@@ -577,7 +688,7 @@ var TEXT_EN = {
       '<div class="card">' +
       '<h2>Loading images</h2>' +
       '<p>The study is downloading the pictures it needs. On a slow ' +
-      'connection this may take a minute.</p>' +
+      'connection, this may take a minute.</p>' +
       '<p>Please do not close this page.</p>' +
       '</div>',
     error:
@@ -590,7 +701,7 @@ var TEXT_EN = {
 
   // --- Errors -----------------------------------------------------------
   error: {
-    title: 'Something went wrong',
+    title: 'An error has occurred',
     body:
       '<p>The study could not start. Please reload the page.</p>' +
       '<p>If the problem continues, please contact the researcher.</p>',
