@@ -7,9 +7,14 @@
  * Serves the repository on a local port, drives the experiment in headless
  * Chromium and checks:
  *
+ * The package is the one config.js uses (CONFIG.data.set), and the slots
+ * are chosen from it: for run 1 the participant slot whose block 1 list
+ * has the earliest catch trial, for runs 3 and 4 the one whose block 1
+ * list reaches both a catch trial and a consistency repeat soonest.
+ *
  *   1. index.html, the config as shipped: a real session (consent, full
  *      screen, ID, brightness, gamma, episodes, block 1 practice and its
- *      first 11 main trials, which include a catch trial). No label on any
+ *      main trials up to the first catch trial). No label on any
  *      trial, feedback or catch screen, and none in the recorded data —
  *      even though the test switches CONFIG.dev.trial_label on in the page
  *      once the session has started (the label must also depend on
@@ -18,8 +23,9 @@
  *      session is refused (validation report with debug on, the neutral
  *      error screen with debug off); the consent screen never appears.
  *   3. dev.html, the "Trial label" box on (its default): both blocks with
- *      practice, 42 main trials each (slot 11: a catch at trial 32 and a
- *      consistency repeat at 42 in block 1). Every practice, feedback, main
+ *      practice (design.json: trials and feedback per block), N main trials
+ *      each, N chosen so block 1 includes a catch trial and a consistency
+ *      repeat. Every practice, feedback, main
  *      and catch screen shows exactly the expected label, worked out here
  *      from the package's own JSON files; nothing of it reaches the data.
  *   4. dev.html, the box off: no label anywhere, and the same columns and
@@ -53,7 +59,15 @@ const http = require('http');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const PKG  = path.join(ROOT, 'data/sets/v5b_180/');
+// The package config.js uses.
+const SET = (() => {
+  const vm = require('vm');
+  const ctx = { window: {} };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'config.js'), 'utf8'), ctx);
+  return ctx.CONFIG.data.set;
+})();
+const PKG  = path.join(ROOT, 'data/sets', SET + '/');
 const TEST_ID = 'Z_21121989';
 
 // --- A static server for the repository ------------------------------------
@@ -135,8 +149,27 @@ function blockRows(group, slot, position) {
   const rowNo = ((slot - 1) % assignment.slots_per_group) + 1;
   const a = assignment.groups[group].find((r) => r.slot === rowNo);
   const b = a.blocks.find((x) => x.position === position);
-  return { list: read(design.lists[b.list].file), practice: read(b.practice).slice(0, 3) };
+  return { list: read(design.lists[b.list].file),
+           practice: read(b.practice).slice(0, design.practice_by_block[position - 1]) };
 }
+
+// How many practice trials of a block get feedback (design.json).
+function feedbackTrials(position) {
+  return design.practice_feedback_by_block_position[position]
+    ? design.practice_feedback_trials : 0;
+}
+
+// Participant slots (1..slots_per_group) by what their block 1 list reaches.
+function pickSlot(score) {
+  let best = null;
+  for (let slot = 1; slot <= assignment.slots_per_group; slot++) {
+    const { list } = blockRows('participant', slot, 1);
+    const v = score(list);
+    if (!best || v < best.v) best = { slot, v };
+  }
+  return best;
+}
+const firstOf = (list, type) => list.find((r) => r.trial_type === type).trial;
 
 // --- Driving the experiment -------------------------------------------------
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -292,10 +325,13 @@ function labelInData(rows, labels) {
     // 1. index.html as shipped, with the setting switched on mid-session.
     console.log('\n1. index.html (config as shipped; CONFIG.dev.trial_label forced on in the page)');
     {
-      const page = await open('index.html?group=participant&slot=3&pid=' + TEST_ID);
+      const pick = pickSlot((list) => firstOf(list, 'catch'));
+      console.log('   package ' + SET + ', participant slot ' + pick.slot + ' (first catch at trial ' +
+                  pick.v + ' of block 1)');
+      const page = await open('index.html?group=participant&slot=' + pick.slot + '&pid=' + TEST_ID);
       let forced = false;
       const screens = await autopilot(page, {
-        stopAfterMain: 11,
+        stopAfterMain: pick.v,
         onState: async (s) => {
           if (!forced && s.block === 'consent') {
             await page.evaluate(() => { CONFIG.dev = CONFIG.dev || {}; CONFIG.dev.trial_label = true; });
@@ -306,8 +342,9 @@ function labelInData(rows, labels) {
       const rows = await recorded(page);
       const kinds = screens.reduce((a, s) => { a[s.block + '/' + s.phase] = (a[s.block + '/' + s.phase] || 0) + 1; return a; }, {});
       check('the session reached practice, feedback, main and catch screens',
-            kinds['pairs/practice'] === 3 && kinds['practice_feedback/undefined'] === 3 &&
-            kinds['pairs/main'] === 11 && kinds['catch_lockout/undefined'] === 1,
+            kinds['pairs/practice'] === design.practice_by_block[0] &&
+            (kinds['practice_feedback/undefined'] || 0) === feedbackTrials(1) &&
+            kinds['pairs/main'] === pick.v && kinds['catch_lockout/undefined'] === 1,
             JSON.stringify(kinds));
       check('CONFIG.dev.trial_label was on in the page', forced &&
             await page.evaluate(() => CONFIG.dev.trial_label === true));
@@ -327,7 +364,7 @@ function labelInData(rows, labels) {
       const body = config.replace(/trial_label:\s*false/, 'trial_label: true')
                          .replace(/debug:\s*(true|false),/, 'debug: ' + debug + ',');
       if (body === config) throw new Error('could not switch the label on in config.js');
-      const page = await open('index.html?group=participant&slot=3&pid=' + TEST_ID, body);
+      const page = await open('index.html?group=participant&slot=1&pid=' + TEST_ID, body);
       await sleep(1500);
       const text = await page.evaluate(() => document.body.innerText);
       const consent = /Consent to take part/.test(text);
@@ -340,10 +377,11 @@ function labelInData(rows, labels) {
     }
 
     // 3 and 4. dev.html with the box on, then off.
-    const GROUP = 'participant', SLOT = 11, N = 42;
+    const pick = pickSlot((list) => Math.max(firstOf(list, 'catch'), firstOf(list, 'consistency')));
+    const GROUP = 'participant', SLOT = pick.slot, N = pick.v;
     let onRows = null;
     for (const on of [true, false]) {
-      console.log('\n' + (on ? '3' : '4') + '. dev.html, trial label ' + (on ? 'on (default)' : 'off') +
+      console.log('\n' + (on ? '3' : '4') + '. dev.html (' + SET + '), trial label ' + (on ? 'on (default)' : 'off') +
                   ', slot ' + SLOT + ', ' + N + ' main trials per block');
       const page = await open('dev.html?group=' + GROUP + '&slot=' + SLOT + '&pid=' + TEST_ID);
       await page.waitForSelector('#dev-run-custom');
@@ -369,7 +407,8 @@ function labelInData(rows, labels) {
           const { list, practice } = blockRows(GROUP, SLOT, p);
           practice.forEach((r, i) => {
             const l = expectedLabel(r, p, { n: i + 1, of: practice.length });
-            want.push(['pairs', p, l], ['practice_feedback', p, l]);
+            want.push(['pairs', p, l]);
+            if (i < feedbackTrials(p)) want.push(['practice_feedback', p, l]);
           });
           list.slice(0, N).forEach((r) => {
             const l = expectedLabel(r, p);
@@ -382,8 +421,9 @@ function labelInData(rows, labels) {
         want.forEach((w, i) => {
           if (JSON.stringify(w) !== JSON.stringify(got[i])) bad.push({ i, want: w, got: got[i] });
         });
-        check('every screen shows the expected label (' + want.length + ' screens: 2 x (3 practice' +
-              ' + 3 feedback + ' + N + ' main + catch lockouts))',
+        check('every screen shows the expected label (' + want.length + ' screens: practice ' +
+              design.practice_by_block.join(' + ') + ', feedback ' + [1, 2].map(feedbackTrials).join(' + ') +
+              ', 2 x ' + N + ' main, catch lockouts)',
               !bad.length && got.length === want.length,
               bad.length ? JSON.stringify(bad.slice(0, 3)) : got.length + ' vs ' + want.length);
         const sample = (t) => (screens.find((s) => s.label && s.label.indexOf(t) !== -1) || {}).label;
