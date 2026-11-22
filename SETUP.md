@@ -40,7 +40,8 @@ Copy the printed line into GitHub → Settings → SSH and GPG keys → New SSH 
 ## 1. Get the repository
 
 The repository already exists on GitHub and already contains the frozen
-v5b_180 package (~230 MB, see §5), so the first clone takes a little while:
+v5c_180 package (~230 MB, see §5) — and the earlier v5b_180, no longer
+used, of about the same size — so the first clone takes a little while:
 
 ```bash
 git clone git@github.com:<username>/<repo-name>.git
@@ -89,7 +90,7 @@ DataPipe stores each uploaded file on **Zenodo** (the mechanism is the same
 as it was with OSF). **Both experiment IDs in `config.js` (responses and
 contact details) are the test experiments**, kept so the code can be tested
 end to end; their data mix with older test sessions. Before data collection,
-create new DataPipe experiments for v5b, connect each to its Zenodo record,
+create new DataPipe experiments for v5c, connect each to its Zenodo record,
 and put the new IDs in `config.js` (`README.md`, "Before data collection").
 
 **Before every test round, on the DataPipe dashboard:**
@@ -176,17 +177,19 @@ the output columns without adding junk to the data store. Or use
 
 ## 5. The stimulus package (frozen)
 
-The v5b package is already committed:
+The v5c package is already committed and in use:
 
 ```
-data/sets/v5b_180/   README.txt, design.json, assignment.json, lists/ (8 lists),
-                     practice/ (block1, block2), items.csv, preload.json,
-                     manifest.csv, stimuli/ (656 images), and a CSV copy of
-                     every JSON
+data/sets/v5c_180/   README.txt, design.json, assignment.json, lists/ (8 lists),
+                     practice/ (block1, block2: 3 trials each), items.csv
+                     (406 items), preload.json (617 images), manifest.csv,
+                     stimuli/ (632 images: 617 shown + 15 only on catch rows,
+                     42 scenes), and a CSV copy of every JSON
 ```
 
-It is byte-identical to the registered package (checksums verified when it
-was committed). **Never edit, add, remove, re-encode, resize or rename
+It was verified against the package's checksums when it was committed (661
+files). The earlier package `data/sets/v5b_180/` is still there, unused; it
+will be removed in a separate change, and is left untouched until then. **Never edit, add, remove, re-encode, resize or rename
 anything in this folder.** The experiment reads it as it is; the validator
 refuses to start if its counts or structure differ from `design.json`.
 Read its `README.txt` for the design.
@@ -198,10 +201,16 @@ node tools/check_package.js
 ```
 
 This runs the same checks as the browser (`src/validate.js`: every list
-against `design.json`, the catch targets, the practice files, the
+against `design.json`, the catch targets, the practice settings and files,
+`preload.json` against the images shown, the excluded scenes, the
 assignment table, the texts in both languages, the settings `index.html`
-would use) and also checks that every image the package names is on disk
-and that every file in `stimuli/` matches its SHA-256 in `manifest.csv`.
+would use) and also checks that every image the package names is on disk,
+that every file in `stimuli/` matches its SHA-256 in `manifest.csv`, and
+that `items.csv` holds every item. It prints the image count (v5c_180: 617
+shown + 15 only on catch rows = 632, 42 scenes). `node tools/check_package.js
+<set>` checks another package. The practice now comes only from the
+package, so the older v5b_180, whose design.json has no
+`practice_feedback_trials`, no longer passes; that is expected.
 It prints `PASS` or `FAIL` and exits 1 on any error. The placeholder
 warnings (consent, state items, `[TO COMPLETE after pilot]`) remain until
 the approved wording is pasted in.
@@ -230,7 +239,7 @@ https://<username>.github.io/<repo-name>/?pid=R_4EWNe48BIB50mVI&group=control&sl
 |---|---|---|
 | `pid` | recommended. Without it (and with `allow_manual_id` on) the participant must type a valid ID **or** give a name and email address | the participant ID, case-sensitive |
 | `group` | **yes** | `participant` or `control`, exactly. Without it the study does not start |
-| `slot` | **yes** | a whole number, 1 or more. Slot n uses row ((n − 1) mod 64) + 1 of the group's table in `data/sets/v5b_180/assignment.json`. **Hand slots out in sequence per group, starting at 1, and never reuse one.** Without a valid slot the study does not start |
+| `slot` | **yes** | a whole number, 1 or more. Slot n uses row ((n − 1) mod 64) + 1 of the group's table in `data/sets/v5c_180/assignment.json`. **Hand slots out in sequence per group, starting at 1, and never reuse one.** Without a valid slot the study does not start |
 | `idate` | no | the interview date, `YYYY-MM-DD`. Added by the researcher who schedules the interviews; never asked on screen. An invalid date is recorded empty |
 | `lang` | no | `ja` for Japanese; English otherwise |
 
@@ -322,7 +331,9 @@ repository** (`data/` folder). The GitHub repository is public. So:
    git push
    ```
 
-   The first push is ~230 MB (the v5b images). If it fails part-way, run
+   The sync copies every package committed in `data/sets/`: v5c_180 (in
+   use) and, until it is removed here, v5b_180. A first push after this
+   change adds ~230 MB (the v5c images). If it fails part-way, run
    `git config http.postBuffer 524288000` in folder B and push again. A
    Pavlovia project that held the v4 experiment loses `data/sets/v4/` in
    this sync (it no longer exists here); the results in `data/` are kept.
@@ -342,11 +353,11 @@ repository** (`data/` folder). The GitHub repository is public. So:
   session, named
 
   ```
-  <project>_<participant_id>_v5b_180_<Japan-time stamp>_SESSION_<date>.csv
+  <project>_<participant_id>_v5c_180_<Japan-time stamp>_SESSION_<date>.csv
   ```
 
   The middle part is the same as the GitHub file name
-  (`<participant_id>_v5b_180_<Japan-time stamp>`). Download them from the
+  (`<participant_id>_v5c_180_<Japan-time stamp>`). Download them from the
   experiment page (**Download results**) or with `git pull` in folder B.
 
 The Pavlovia session is opened only after the consent screen and the window
@@ -370,7 +381,7 @@ Commit in folder A, then run `tools/sync_to_pavlovia.sh` and push from B
 again. The script pulls B first (Pavlovia's result commits), never touches
 `data/*.csv`, `config.json` or `lib/`, and writes `DEPLOYED_COMMIT.txt`
 — the commit that is live — for the launch checklist. To deploy another
-branch: `tools/sync_to_pavlovia.sh ~/pavlovia/<project> v5b-two-blocks`.
+branch: `tools/sync_to_pavlovia.sh ~/pavlovia/<project> v5c-switch`.
 
 ### If saving fails on Pavlovia
 
@@ -390,7 +401,7 @@ unless every item passes"). It is a list of hard gates: do not send a single
 invitation while any item fails. In addition, for deployment:
 
 - [ ] A test session per group with `Z_21121989` arrives on Zenodo through
-      the (new, v5b) DataPipe experiment
+      the (new, v5c) DataPipe experiment
 - [ ] All images load (no grey boxes, no console 404s; `failed_images` is
       `[]` on both `preload` rows)
 - [ ] Participant links generated with the correct IDs, groups, slots (in

@@ -7,7 +7,7 @@ analysable table.
 Experiment: two-alternative forced choice between two edits of the same
 photograph (local contrast and/or colour saturation), in **two blocks**
 about two different episodes, plus episode questions, word ratings and
-state items. Stimulus package **v5b_180** (frozen, registered). On GitHub
+state items. Stimulus package **v5c_180** (frozen; v5b_180 before it). On GitHub
 Pages uploaded via DataPipe (experiment `VoYGtg5yKGr2`, a **test**
 experiment until data collection — see README.md) to Zenodo
 (`[Zenodo record — to complete]`); on Pavlovia stored in the private
@@ -21,7 +21,7 @@ Each completed session uploads one CSV, named:
 
 ```
 <participant_id>_<stimulus_set>_<session start, Japan time>.csv
-e.g. R_9rJJWk01c767jE8_v5b_180_2026-11-30T14-10-40.csv
+e.g. R_9rJJWk01c767jE8_v5c_180_2026-11-30T14-10-40.csv
 ```
 
 The stamp is the **start of the session** (when the consent screen
@@ -39,7 +39,7 @@ project's `data/` folder, and Pavlovia adds the project name in front and
 its own date at the end:
 
 ```
-<project>_<participant_id>_v5b_180_<session start, Japan time>_SESSION_<date>.csv
+<project>_<participant_id>_v5c_180_<session start, Japan time>_SESSION_<date>.csv
 ```
 
 The middle part is the GitHub file name without `.csv`. Pavlovia's date at
@@ -229,10 +229,10 @@ slot 130 row 2, and so on.
 | `b1_set`, `b2_set` | `A` / `B` | the item set of each block |
 | `b1_list`, `b2_list` | `A_o4` | the list file (`lists/<list>.json`) |
 | `b1_practice`, `b2_practice` | `practice/block1.json` | the practice file; it follows the block position, not the episode |
-| `practice_trials_b1`, `practice_trials_b2` | `3`, `3` | practice trials actually run before each block (config.js `practice`, which **overrides** design.json's 6 / 3) |
-| `practice_feedback_b1`, `practice_feedback_b2` | `True`, `True` | whether those practice trials had feedback (config.js overrides design.json's true / false) |
-| `stimulus_set` | `v5b_180` | the package |
-| `design_version` | `v5b` | `design.json`'s version |
+| `practice_trials_b1`, `practice_trials_b2` | `3`, `3` | practice trials run before each block, from the package's design.json (`practice_by_block`) |
+| `practice_feedback_b1`, `practice_feedback_b2` | `True`, `True` | whether those practice trials had feedback, from design.json (`practice_feedback_by_block_position`; `practice_feedback_trials` = 3 of them) |
+| `stimulus_set` | `v5c_180` | the package |
+| `design_version` | `v5c` | `design.json`'s version |
 
 ### Block, rest and catch summary
 
@@ -248,8 +248,8 @@ slot 130 row 2, and so on.
 
 | column | example |
 |---|---|
-| `experiment_name` | `derealization_v5b` |
-| `experiment_version` | `1.0.0-v5b` |
+| `experiment_name` | `derealization_v5c` |
+| `experiment_version` | `1.0.0-v5c` |
 | `platform` | `github` / `pavlovia` / `local` — where the session actually ran (with `platform: 'auto'`, worked out from the address) |
 | `contact_storage` | `datapipe` (separate contact file, §15) / `results_file` (name and email in this file, Pavlovia) |
 | `libraries` | `bundled` (our `vendor/` copy of jsPsych 7.1.2 + jQuery 2.2.0) / `pavlovia` (Pavlovia's own `lib/vendors/` copy) |
@@ -463,8 +463,8 @@ The repeat shows the **same pair with the sides swapped**. Use `chosen`
 
 The v4 episode grid, normal-appearance grid and "None of these" follow-up
 are gone, with their columns (`set_code`, `scene_set`, `screen`,
-`chosen_level_index`, `chose_none`, `none_detail`, `cell_px`, …). The v5b
-package has no grid.
+`chosen_level_index`, `chose_none`, `none_detail`, `cell_px`, …). Neither
+the v5b nor the v5c package has a grid.
 
 ---
 
@@ -519,7 +519,7 @@ s = d.iloc[0]
 if s.is_test or s.get('is_dev', False) or s.get('shortened', False):
     raise ValueError('test or dev session')
 
-items = pd.read_csv('data/sets/v5b_180/items.csv')
+items = pd.read_csv('data/sets/v5c_180/items.csv')
 
 trials   = d[d.block == 'pairs'].copy()
 main     = trials[trials.phase == 'main'].copy()
@@ -575,9 +575,11 @@ all_trials = pd.concat(frames, ignore_index=True)
 ```
 
 Group by `participant_id`, and **split by `group` and `episode`** before
-comparing. Check `stimulus_set == 'v5b_180'` and `experiment_version` on
-every file: sessions from older packages (v4) are not comparable
-(different lists, one block, different column meanings — §4).
+comparing. Check `stimulus_set == 'v5c_180'` and `experiment_version` on
+every file: sessions from older packages are not comparable — v5b_180 had
+the same two-block design and columns but different lists, items and scenes
+(and 6 + 3 practice in its design.json); v4 had different lists, one
+block and different column meanings (§4).
 
 ---
 
@@ -593,7 +595,7 @@ For a complete, usable session:
 | `slot`, `assignment_row` | a whole number; `assignment_row == (slot - 1) % 64 + 1` |
 | `b1_episode`, `b2_episode` | participants: derealization + ordinary; controls: ordinary + expectation (either order) |
 | `consent_given` | `True` |
-| `stimulus_set` | `v5b_180` |
+| `stimulus_set` | `v5c_180` |
 | rows where `block == 'pairs'` | 406 (203 per `block_position`) |
 | rows where `phase == 'main'` and `analysed == True` | 360 (180 per block) |
 | `list_trial_type` counts per block | 54 sat_only, 54 fog_only, 36 together, 36 conflict, 15 consistency, 5 catch, 3 practice |

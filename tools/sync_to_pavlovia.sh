@@ -5,7 +5,7 @@
 #
 #   usage:  tools/sync_to_pavlovia.sh <pavlovia-folder> [<commit or branch>]
 #   e.g.    tools/sync_to_pavlovia.sh ~/pavlovia/dpdr_experiment
-#           tools/sync_to_pavlovia.sh ~/pavlovia/dpdr_experiment v5b-two-blocks
+#           tools/sync_to_pavlovia.sh ~/pavlovia/dpdr_experiment v5c-switch
 #
 # Two folders, never mixed (see SETUP.md §7):
 #   this folder        the GitHub repository (public). Never put results here.
