@@ -2,7 +2,7 @@
  * phases/words.js — the word rating task.
  *
  * WHERE IT RUNS
- *   Once, after block 2 and before the state items (see main.js for the
+ *   Once, after block 2 and before the CDS items (see main.js for the
  *   session order). Participants rate the derealization episode (the
  *   episode they described in the interview, named with their own
  *   identifying words, whichever block came last); controls rate their
@@ -16,7 +16,7 @@
  * Splitting them is what makes the grid fit without scrolling. The whole
  * grid must be visible at once, so the participant can compare their
  * answers across words. The grid itself is phases/rating-grid.js, shared
- * with the state items.
+ * by no other screen now (the CDS items have their own layout).
  *
  * GROUP
  *   The instruction and the one-line question are the only group-dependent
@@ -89,9 +89,21 @@ var WordsPhase = (function () {
   // screen is exactly one row, block 'word_ratings'. (jsPsych.data.write
   // is not used: it merges the current trial's `data` over the written
   // object, which relabelled the ratings row as the grid screen's block.)
+  // The order shown: chosen once per session (and kept on resume).
+  var _orderIds = null;
+
   function _gridNode(jsPsych) {
     var W      = words();
-    var order  = _shuffled(W.items);
+    var order;
+    if (_orderIds) {
+      order = _orderIds.map(function (id) {
+        return W.items.filter(function (x) { return x.id === id; })[0];
+      }).filter(Boolean);
+      if (order.length !== W.items.length) order = _shuffled(W.items);
+    } else {
+      order = _shuffled(W.items);
+    }
+    _orderIds = order.map(function (i) { return i.id; });
     var result = null;
 
     return {
@@ -153,5 +165,11 @@ var WordsPhase = (function () {
     return [_instructionNode(), _gridNode(jsPsych)];
   }
 
-  return { buildNodes: buildNodes, words: words };
+  return {
+    buildNodes: buildNodes,
+    words:      words,
+    // For resuming (progress.js): the same word order after a reload.
+    state:      function () { return _orderIds; },
+    restore:    function (s) { _orderIds = s; },
+  };
 })();

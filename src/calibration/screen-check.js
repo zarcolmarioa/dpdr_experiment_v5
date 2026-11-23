@@ -198,6 +198,10 @@ var ScreenCheck = (function () {
           choices: 'NO_KEYS',
           data: { block: 'screen_stop' },
           on_load: function () {
+            // The session stops here: no "Leave this page?" dialog. The
+            // stored progress is kept, so opening the link again in a
+            // larger window continues the session.
+            Progress.guard(false);
             // Leave full screen so the participant can resize or close.
             if (document.fullscreenElement && document.exitFullscreen) {
               document.exitFullscreen().catch(function () {});

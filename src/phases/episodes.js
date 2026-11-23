@@ -277,5 +277,8 @@ var EpisodesPhase = (function () {
     reinstateNodes: reinstateNodes,
     wordsHTML:      wordsHTML,
     answers:        answers,
+    // For resuming (progress.js).
+    state:          function () { return _answers; },
+    restore:        function (s) { _answers = s || {}; },
   };
 })();

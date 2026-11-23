@@ -1,6 +1,6 @@
 /* =========================================================================
  * phases/rating-grid.js — the hand-built 0-6 rating grid, shared by the
- * word ratings (phases/words.js) and the state items (phases/state.js).
+ * word ratings (phases/words.js).
  *
  * WHY THE GRID IS HAND-BUILT
  * --------------------------

@@ -81,13 +81,15 @@ var Validate = (function () {
                            'oppressive', 'threatening'];
   var TARGET_WORDS      = ['foggy', 'faded'];
 
-  // State items: columns state_q02, state_q13, state_q19, state_q29.
-  var EXPECTED_STATE_IDS = ['q02', 'q13', 'q19', 'q29'];
+  // CDS items (trait format): columns cds_q02_*, cds_q13_*, cds_q19_*,
+  // cds_q29_*. Five frequency options (0-4), six duration options (1-6).
+  var EXPECTED_CDS_IDS = ['q02', 'q13', 'q19', 'q29'];
+  var CDS_FREQ_N = 5, CDS_DUR_N = 6;
 
   // Blocks the registered design needs. Switching one off on index.html is
   // allowed (warning) but such a session is not a registered session.
   var REGISTERED_BLOCKS = ['consent', 'episodes', 'practice', 'main', 'rest',
-                           'words', 'state'];
+                           'words', 'cds'];
 
   // Instruction text must not describe the experience with visual words —
   // those are exactly what the word ratings and the images measure.
@@ -775,8 +777,11 @@ var Validate = (function () {
                       'the end of the practice states no count or duration.');
         }
       });
-      // Set-up, brightness, participant details, episode questions.
-      ['calibration.setup_title', 'calibration.setup_body',
+      // Set-up, brightness, participant details, episode questions,
+      // reload warning, resume screen, completion message.
+      ['session.reload_warning', 'session.resume_title', 'session.resume_body',
+       'session.resume_button', 'session.completed',
+       'calibration.setup_title', 'calibration.setup_body',
        'calibration.brightness_title', 'calibration.brightness_intro',
        'calibration.brightness_charger', 'calibration.brightness_auto',
        'calibration.brightness_lighting', 'calibration.brightness_checkbox',
@@ -833,18 +838,39 @@ var Validate = (function () {
       if (idsEn.indexOf(t) === -1) errors.push('Target word "' + t + '" is missing.');
     });
 
-    // State items: exactly the four, same ids in both languages.
+    // CDS items: the instructions, exactly the four items (same ids, in
+    // order, each with its wording), five frequency and six duration
+    // options and the duration heading, in both languages.
     [['EN', TE], ['JA', TJ]].forEach(function (L) {
-      var st = L[1].state;
-      var ids = (st && Array.isArray(st.items)) ? st.items.map(function (x) { return x.id; }) : [];
-      if (ids.join(',') !== EXPECTED_STATE_IDS.join(',')) {
-        errors.push('TEXT_' + L[0] + '.state.items must be ' + EXPECTED_STATE_IDS.join(', ') +
+      var c = L[1].cds || {};
+      var ids = Array.isArray(c.items) ? c.items.map(function (x) { return x && x.id; }) : [];
+      if (ids.join(',') !== EXPECTED_CDS_IDS.join(',')) {
+        errors.push('TEXT_' + L[0] + '.cds.items must be ' + EXPECTED_CDS_IDS.join(', ') +
                     ' in that order. Found: ' + (ids.join(', ') || 'none'));
       }
+      (c.items || []).forEach(function (it, i) {
+        if (!it || !String(it.label || '').trim()) {
+          errors.push('TEXT_' + L[0] + '.cds.items[' + i + '] has no wording.');
+        }
+      });
+      [['freq_options', CDS_FREQ_N], ['dur_options', CDS_DUR_N]].forEach(function (o) {
+        var a = c[o[0]];
+        var good = Array.isArray(a) && a.length === o[1] &&
+                   a.every(function (x) { return String(x || '').trim() !== ''; });
+        if (!good) {
+          errors.push('TEXT_' + L[0] + '.cds.' + o[0] + ' must have ' + o[1] +
+                      ' non-empty options.');
+        }
+      });
+      ['instructions', 'dur_heading', 'incomplete', 'button_submit'].forEach(function (k) {
+        if (!String(c[k] || '').trim()) {
+          errors.push('TEXT_' + L[0] + '.cds.' + k + ' is missing.');
+        }
+      });
     });
 
     // Placeholders: any [bracketed gap] in any participant-facing string
-    // (the consent text, the session length, the state items, ...). Only
+    // (the consent text, the session length, ...). Only
     // the consent variant this platform shows is checked.
     var gaps = [];
     langs.forEach(function (L) {
@@ -875,7 +901,7 @@ var Validate = (function () {
     // Visual words in English instruction text. The rated words and the
     // questionnaire items are exempt.
     var hits = [];
-    _strings(TE, '', ['state.items'], []).forEach(function (s) {
+    _strings(TE, '', ['cds'], []).forEach(function (s) {
       if (VISUAL_WORDS.test(s.value.replace(/<[^>]+>/g, ' '))) hits.push(s.path);
     });
     _strings(WE, 'words', ['words.items'], []).forEach(function (s) {
@@ -960,7 +986,7 @@ var Validate = (function () {
     }
     if (!cfg.researcher_contact || /CHANGE_ME/.test(cfg.researcher_contact)) {
       warnings.push('CONFIG.researcher_contact is still the placeholder. It appears ' +
-                    'on the final screen and the upload-failure screen — set it ' +
+                    'on the upload-failure screen; set it ' +
                     'before recruiting.');
     }
     return { errors: errors, warnings: warnings };

@@ -140,7 +140,7 @@ The session runs in this order (both groups):
 1. consent → 2. full screen and window check → 3. ID screen →
 4. set-up screen and brightness → 5. gamma matching → 6. episode selection →
 7. block 1 (reinstatement, 3 practice trials, 200 trials) → 8. 1-minute
-rest → 9. block 2 (as block 1) → 10. word ratings → 11. state items →
+rest → 9. block 2 (as block 1) → 10. word ratings → 11. CDS items →
 12. save → 13. completion screen.
 
 With `CONFIG.debug` on, the completion screen states whether the upload
@@ -212,7 +212,7 @@ shown + 15 only on catch rows = 632, 42 scenes). `node tools/check_package.js
 package, so the older v5b_180, whose design.json has no
 `practice_feedback_trials`, no longer passes; that is expected.
 It prints `PASS` or `FAIL` and exits 1 on any error. The placeholder
-warnings (consent, state items, `[TO COMPLETE after pilot]`) remain until
+warnings (consent, `[TO COMPLETE after pilot]`) remain until
 the approved wording is pasted in.
 
 **One caution.** Git keeps every version of every file permanently, and PNGs

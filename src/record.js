@@ -9,7 +9,7 @@
  *      ratings; then the closing stamps).
  *   2. Build the per-trial row for a stimulus pair or a catch trial.
  *
- * The consent, episode, rest and state rows are built in their own phase
+ * The consent, episode, rest and CDS rows are built in their own phase
  * files.
  *
  * SESSION PROPERTIES OVERWRITE TRIAL FIELDS, IMPORTANT
@@ -360,6 +360,36 @@ var Record = (function () {
     return participantId + '_' + set + '_' + sessionStamp() + '.csv';
   }
 
+  // The name the response file is saved under. A session resumed AT the
+  // saving step (an upload may already have gone through) adds
+  // _resumed<n> (n = the segment), so DataPipe never refuses it as a
+  // duplicate. Recorded as data_filename.
+  function dataFilename(participantId) {
+    var base = sessionFilename(participantId || 'NOID');
+    if (typeof Progress !== 'undefined' && Progress.resumeKind() === 'save') {
+      base = base.replace(/\.csv$/, '_resumed' + Progress.segment() + '.csv');
+    }
+    return base;
+  }
+
+  // For resuming (progress.js): the times and counts later screens use.
+  function state() {
+    return {
+      sessionStart: _sessionStart ? _sessionStart.toISOString() : null,
+      taskStart:    _taskStart ? _taskStart.toISOString() : null,
+      taskEnd:      _taskEnd ? _taskEnd.toISOString() : null,
+      catchFail:    _catchFail,
+      catchShown:   _catchShown,
+    };
+  }
+  function restore(s) {
+    _sessionStart = s.sessionStart ? new Date(s.sessionStart) : _sessionStart;
+    _taskStart    = s.taskStart ? new Date(s.taskStart) : null;
+    _taskEnd      = s.taskEnd ? new Date(s.taskEnd) : null;
+    _catchFail    = s.catchFail  || _catchFail;
+    _catchShown   = s.catchShown || _catchShown;
+  }
+
   return {
     stampSessionStart: stampSessionStart,
     stampParticipant:  stampParticipant,
@@ -373,6 +403,9 @@ var Record = (function () {
     markBlockEnd:      markBlockEnd,
     markRest:          markRest,
     sessionFilename:   sessionFilename,
+    dataFilename:      dataFilename,
+    state:             state,
+    restore:           restore,
     sessionStamp:      sessionStamp,
     sessionStartISO:   sessionStartISO,
     markTaskStart:     markTaskStart,

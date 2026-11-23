@@ -9,7 +9,8 @@
 //   - distractions: no phone or other devices during the study, including
 //     the breaks;
 //   - for laptops and desktops alike.
-// The wording is in Loader.text().calibration.setup_title / setup_body.
+// The wording is in Loader.text().calibration.setup_title / setup_body,
+// followed by the reload warning (session.reload_warning).
 // Like the other set-up screens it never mentions the pictures.
 //
 // OUTPUT: one row with block = 'setup' (its rt is the time on the screen).
@@ -31,6 +32,8 @@ var SetupScreen = (function () {
           '<div class="calibration-card">' +
           '<h2>' + T.setup_title + '</h2>' +
           T.setup_body +
+          // Do not reload or close the page (also before block 1's practice).
+          Loader.text().session.reload_warning +
           '<div class="btn-row">' +
           '<button id="setup-continue-btn" class="calib-btn">' +
           T.button_continue + '</button>' +

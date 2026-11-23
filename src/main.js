@@ -26,7 +26,7 @@
  *    8. rest, 1 minute               phases/rest.js        blocks.rest
  *    9. block 2                      as block 1
  *   10. word ratings                 phases/words.js       blocks.words
- *   11. state items                  phases/state.js       blocks.state
+ *   11. CDS items (4, trait format)  phases/cds.js         blocks.cds
  *   12. save  (DataPipe / Pavlovia / local download), by Platform.name()
  *   13. completion screen, showing whether the upload succeeded
  *
@@ -41,7 +41,7 @@
  * ========================================================================= */
 
 /* global CONFIG, ParticipantID, Record, PairsPhase, WordsPhase, RestPhase,
-          ConsentPhase, EpisodesPhase, StatePhase,
+          ConsentPhase, EpisodesPhase, CdsPhase,
           ScreenCheck, BrightnessConfirmation, GammaCalibration,
           Loader, Validate, DevMenu, Platform, TEXT_EN, TEXT_JA,
           initJsPsych, jsPsychHtmlKeyboardResponse, jsPsychSurveyText,
@@ -53,7 +53,12 @@
 // waits for the participant to close the page, so the timeline never
 // finishes and an on_finish would never run. Local-mode saving is done by
 // an explicit node in _buildSaveNodes() instead.
-var jsPsych = initJsPsych({});
+// The hooks save progress in the browser after every screen and trial and
+// number the rows across segments (progress.js).
+var jsPsych = initJsPsych({
+  on_trial_start: function (trial) { Progress.onTrialStart(trial); },
+  on_data_update: function (data) { Progress.onDataUpdate(data); },
+});
 
 // Holds whatever the save step reports back, so the completion screen can
 // show it.
@@ -128,6 +133,9 @@ function _buildSaveNodes() {
         // Whether the separate name/email upload succeeded. null when
         // nothing was given, in local mode, or if it had not returned yet.
         contact_saved:       ParticipantID.contactSaved(),
+        // The name the response file is saved under (with _resumed<n>
+        // when the session was resumed at this saving step).
+        data_filename:       Record.dataFilename(ParticipantID.get()),
       });
     },
   });
@@ -140,7 +148,7 @@ function _buildSaveNodes() {
     nodes.push({
       type: jsPsychCallFunction,
       func: function () {
-        var filename = Record.sessionFilename(ParticipantID.get() || 'NOID');
+        var filename = Record.dataFilename(ParticipantID.get());
         jsPsych.data.get().localSave('csv', filename);
         if (CONFIG.debug) console.log('[Data] local CSV saved: ' + filename);
       },
@@ -168,7 +176,7 @@ function _buildSaveNodes() {
       action:        'save',
       experiment_id: CONFIG.datapipe.experiment_id,
       filename:      function () {
-        return Record.sessionFilename(ParticipantID.get() || 'NOID');
+        return Record.dataFilename(ParticipantID.get());
       },
       data_string:   function () { return jsPsych.data.get().csv(); },
       // Shown while the file uploads. Replaces the plugin's English default
@@ -199,7 +207,7 @@ function _buildSaveNodes() {
       // participantId carries the same ID, set and Japan-time stamp as the
       // DataPipe file name, e.g. R_xxx_v5c_180_2026-11-30T14-12-40.
       participantId: function () {
-        return Record.sessionFilename(ParticipantID.get() || 'NOID')
+        return Record.dataFilename(ParticipantID.get())
                      .replace(/\.csv$/, '');
       },
       dataFilter: function (data) { return data; },
@@ -243,7 +251,8 @@ function _buildSaveNodes() {
 //
 // Three outcomes, all in the participant's language:
 //
-//   saved     — thanks, confirmation the responses were saved, contact line
+//   saved     — thanks, confirmation the responses were saved (no contact
+//               sentence)
 //   failed    — the upload did not go through: a button downloads the CSV so
 //               the participant can email it, rather than the session being
 //               lost silently
@@ -294,10 +303,9 @@ function _buildCompletionNode() {
                '<p id="end-download-done" class="hint" style="display:none">' +
                E.fail_done + '</p>';
       } else {
-        html = '<div class="card end-card"><h2>' + E.title + '</h2>' +
-               E.body +
-               '<p class="hint">' +
-               E.contact_line.replace(/\{CONTACT\}/g, contact) + '</p>';
+        // No contact sentence on the thank-you screen; the failure screen
+        // keeps the contact address.
+        html = '<div class="card end-card"><h2>' + E.title + '</h2>' + E.body;
       }
 
       if (CONFIG.debug) {
@@ -361,10 +369,16 @@ function _buildCompletionNode() {
       return html + '</div>';
     },
     on_load: function () {
+      // The final screen: no more "Leave this page?" dialog; the stored
+      // progress is deleted and this ID is recorded as having completed.
+      var platform = Platform.name();
+      var failed = (platform !== 'local') &&
+                   !(UPLOAD_RESULT.attempted && UPLOAD_RESULT.success);
+      Progress.complete(ParticipantID.get(), failed ? 'failed' : 'saved');
       var btn = document.getElementById('end-download');
       if (!btn) return;
       btn.addEventListener('click', function () {
-        var filename = Record.sessionFilename(ParticipantID.get() || 'NOID');
+        var filename = Record.dataFilename(ParticipantID.get());
         jsPsych.data.get().localSave('csv', filename);
         var done = document.getElementById('end-download-done');
         if (done) done.style.display = 'block';
@@ -387,6 +401,49 @@ function _runIncompleteLink(reason) {
     choices: 'NO_KEYS',
     data: { block: 'link_incomplete' },
   }]);
+}
+
+// ---------------------------------------------------------------------------
+// This ID has already completed the study in this browser (index.html): the
+// completion message and nothing else. Nothing is recorded or uploaded.
+// ---------------------------------------------------------------------------
+function _completedScreen() {
+  return {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function () {
+      return '<div class="card end-card">' + Loader.text().session.completed + '</div>';
+    },
+    choices: 'NO_KEYS',
+    data: { block: 'already_completed' },
+    on_load: function () { Progress.abandon(); },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The screen that opens a resumed session. Only Continue is offered.
+// ---------------------------------------------------------------------------
+function _resumeScreen() {
+  return {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function () {
+      var S = Loader.text().session;
+      return '<div class="card"><h2>' + S.resume_title + '</h2>' +
+             S.resume_body + S.reload_warning + '</div>';
+    },
+    choices: function () { return [Loader.text().session.resume_button]; },
+    data: { block: 'resume' },
+    on_start: function () { Progress.guard(true); },
+    on_finish: function (data) { Progress.confirmResume(data); },
+  };
+}
+
+// The settings dev.html may change, stored with the progress so a dev
+// session resumes with the same ones.
+function _devConfig() {
+  return JSON.parse(JSON.stringify({
+    blocks: CONFIG.blocks, calibration: CONFIG.calibration,
+    limits: CONFIG.limits || null, platform: CONFIG.platform, dev: CONFIG.dev || null,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -436,7 +493,7 @@ function _positions() {
 // ---------------------------------------------------------------------------
 // Build and run.
 // ---------------------------------------------------------------------------
-function runExperiment() {
+function runExperiment(opts) {
   var timeline = [];
 
   // Panels are a fixed size unless scaling is explicitly permitted.
@@ -476,9 +533,41 @@ function runExperiment() {
   var lim = Loader.limits();
   var shortened = (lim.max_trials > 0 || lim.max_practice > 0);
 
+  // --- Completion check and resuming (progress.js) -------------------------
+  // index.html: an ID from the link that has completed the study in this
+  // browser sees only the completion message. (A typed ID is checked on
+  // the ID screen.)
+  var linkPid = ParticipantID.fromURL();
+  if (!window.DEV_MODE && linkPid && Progress.isCompleted(linkPid)) {
+    console.log('[Progress] ' + linkPid + ' has already completed the study.');
+    jsPsych.run([_completedScreen()]);
+    return;
+  }
+
+  // An unfinished session for this link? index.html resumes it; dev.html
+  // only when its menu says so (opts.resume).
+  var key = Progress.sessionKey(linkPid);
+  var stored = (window.DEV_MODE && !(opts && opts.resume)) ? null : Progress.find(key);
+  Progress.register('participant', ParticipantID.state, ParticipantID.restore);
+  Progress.register('episodes', EpisodesPhase.state, EpisodesPhase.restore);
+  Progress.register('record', Record.state, Record.restore);
+  Progress.register('words', WordsPhase.state, WordsPhase.restore);
+  // Restores the modules and the rows, before the timeline is built.
+  Progress.start(jsPsych, key, stored, window.DEV_MODE ? _devConfig() : null);
+
+  // Each top-level node is tagged (Progress.tag): which part it belongs to,
+  // and whether it is a restart point.
+  function add(nodes, kind, firstIsCp) {
+    (nodes || []).forEach(function (n, i) {
+      var meta = n._res || { kind: kind, cp: !!(firstIsCp && i === 0) };
+      delete n._res;
+      timeline.push(Progress.tag(n, meta));
+    });
+  }
+
   // Session properties, stamped first so they reach every row (jsPsych's
   // addProperties also covers rows recorded later).
-  timeline.push({
+  add([{
     type: jsPsychCallFunction,
     func: function () {
       Record.stampSessionStart(jsPsych);
@@ -490,86 +579,150 @@ function runExperiment() {
         shortened_to: shortened ? (lim.max_trials || null) : null,
         shortened_practice_to: shortened ? (lim.max_practice || null) : null,
         positions_run: positions.join(','),
+        // Resuming: whether browser storage works, and the interruptions.
+        resume_available:   Progress.available(),
+        resume_count:       0,
+        resume_gap_total_s: 0,
       });
+      // "Leave this page?" from the consent screen until the final screen.
+      Progress.guard(true);
     },
-  });
+  }], 'start');
 
   // 1. Consent. Declining ends the session here with nothing uploaded.
-  if (CONFIG.blocks.consent) {
-    timeline = timeline.concat(ConsentPhase.buildNodes(jsPsych));
-  }
+  if (CONFIG.blocks.consent) add(ConsentPhase.buildNodes(jsPsych), 'consent', true);
 
   // 2. Full screen, window check (hard stop), and the dev size check.
   //    Before the ID screen, so a stopped participant has uploaded nothing.
-  timeline = timeline.concat(ScreenCheck.buildNodes(jsPsych));
+  add(ScreenCheck.buildNodes(jsPsych), 'screen', true);
 
   // Pavlovia only: open the Pavlovia session now — after consent and the
   // window check, so neither a decline nor a stop opens one.
-  timeline = timeline.concat(_buildPavloviaInit());
+  add(_buildPavloviaInit(), 'pavlovia');
 
-  // 3. Participant ID, then stamp it.
-  timeline = timeline.concat(ParticipantID.buildNodes(jsPsych));
-  timeline.push({
+  // 3. Participant ID, then (index.html) the completion check for a typed
+  // ID, then stamp it.
+  add(ParticipantID.buildNodes(jsPsych), 'id', true);
+  add([{
+    timeline: [_completedScreen()],
+    conditional_function: function () { return ParticipantID.alreadyCompleted(); },
+  }], 'id');
+  add([{
     type: jsPsychCallFunction,
     func: function () {
       Record.stampParticipant(jsPsych, ParticipantID.get(),
                               ParticipantID.isSuperuser());
     },
-  });
+  }], 'id');
 
   // Start downloading the stimuli in the background, early, so they are
   // usually cached by the time each block needs them.
-  timeline.push(_buildBackgroundPreload(positions));
+  add([_buildBackgroundPreload(positions)], 'preload_bg');
 
   // 4-5. Set-up screen, then display calibration. Order matters:
   // brightness before gamma, because the gamma match is judged by eye and
   // a dimmed screen would bias it.
-  if (CONFIG.calibration.setup) {
-    timeline = timeline.concat(SetupScreen.getNodes(jsPsych));
-  }
+  if (CONFIG.calibration.setup) add(SetupScreen.getNodes(jsPsych), 'setup', true);
   if (CONFIG.calibration.brightness) {
-    timeline = timeline.concat(BrightnessConfirmation.getNodes(jsPsych));
+    add(BrightnessConfirmation.getNodes(jsPsych), 'brightness', true);
   }
-  if (CONFIG.calibration.gamma) {
-    timeline = timeline.concat(GammaCalibration.getNodes(jsPsych));
-  }
+  if (CONFIG.calibration.gamma) add(GammaCalibration.getNodes(jsPsych), 'gamma', true);
 
   // 6. Episode selection: the identifying words and recall questions for
   // each recalled episode, and (controls) the description of derealization
   // for the expectation block.
-  if (CONFIG.blocks.episodes) {
-    timeline = timeline.concat(EpisodesPhase.buildNodes(jsPsych));
-  }
+  if (CONFIG.blocks.episodes) add(EpisodesPhase.buildNodes(jsPsych), 'episodes', true);
 
-  // 7-9. Block 1, the rest, block 2.
+  // 7-9. Block 1, the rest, block 2. The block nodes carry their own
+  // tags (pairs.js).
   positions.forEach(function (p, i) {
-    if (i > 0 && CONFIG.blocks.rest) {
-      timeline = timeline.concat(RestPhase.buildNodes(jsPsych));
-    }
+    if (i > 0 && CONFIG.blocks.rest) add(RestPhase.buildNodes(jsPsych), 'rest', true);
     var b = Loader.block(p);
-    timeline = timeline.concat(
-      PairsPhase.buildBlockNodes(jsPsych, b, EpisodesPhase.reinstateNodes(jsPsych, b)));
+    add(PairsPhase.buildBlockNodes(jsPsych, b, EpisodesPhase.reinstateNodes(jsPsych, b)),
+        'block');
   });
   // A rest-only dev run (no block positions, rest on).
   if (!positions.length && CONFIG.blocks.rest) {
-    timeline = timeline.concat(RestPhase.buildNodes(jsPsych));
+    add(RestPhase.buildNodes(jsPsych), 'rest', true);
   }
 
   // 10. Word ratings, once, after block 2.
-  if (CONFIG.blocks.words) {
-    timeline = timeline.concat(WordsPhase.buildNodes(jsPsych));
-  }
+  if (CONFIG.blocks.words) add(WordsPhase.buildNodes(jsPsych), 'words', true);
 
-  // 11. State items.
-  if (CONFIG.blocks.state) {
-    timeline = timeline.concat(StatePhase.buildNodes(jsPsych));
-  }
+  // 11. CDS items.
+  if (CONFIG.blocks.cds) add(CdsPhase.buildNodes(jsPsych), 'cds', true);
 
   // 12-13. Save and completion.
-  timeline = timeline.concat(_buildSaveNodes());
-  timeline.push(_buildCompletionNode());
+  add(_buildSaveNodes(), 'save', true);
+  add([_buildCompletionNode()], 'end');
 
-  jsPsych.run(timeline);
+  if (!Progress.resuming()) {
+    jsPsych.run(timeline);
+    return;
+  }
+  jsPsych.run(_resumedTimeline(timeline, positions));
+}
+
+// ---------------------------------------------------------------------------
+// The timeline of a resumed session: the resume screen, full screen and the
+// window check again, (Pavlovia) a new Pavlovia session, the image
+// download, then the session from its restart point. Inside a block, the
+// block's preload gate first and, before a practice-end screen or a main
+// trial, the reinstatement screen.
+//
+//   restart point            continues with
+//   consent                  consent (then everything as at the start)
+//   full screen ... gamma    that part again from its first screen
+//   episodes                 the episode questions from the first screen
+//   reinstate (practice)     [gate] reinstatement, practice from the start
+//   practice_end             [gate, reinstatement] the practice-end screen
+//   main trial               [gate, reinstatement] that trial
+//   break                    [gate] that break screen
+//   rest                     the rest, with the time that remained
+//   words / cds              that part from its first screen
+//   save                     the saving step (file name _resumed<n>); no
+//                            full screen
+// ---------------------------------------------------------------------------
+function _resumedTimeline(full, positions) {
+  var c    = Progress.resumeIndex();
+  var meta = Progress.metaList();
+  var kind = (meta[c] || {}).kind;
+  var first = function (k) {
+    for (var i = 0; i < meta.length; i++) if (meta[i].kind === k) return i;
+    return -1;
+  };
+  var out  = [_resumeScreen()];
+  var from = full.slice(c);
+  var screenAt = first('screen');
+
+  if (kind === 'save') {
+    if (first('pavlovia') !== -1) out = out.concat(_buildPavloviaInit());
+    return out.concat(from);
+  }
+
+  if (screenAt !== -1 && c > screenAt) {
+    out = out.concat(ScreenCheck.buildNodes(jsPsych));
+    var pav = first('pavlovia');
+    if (pav !== -1 && pav < c) out = out.concat(_buildPavloviaInit());
+    var bg = first('preload_bg');
+    if (bg !== -1 && bg < c) out.push(_buildBackgroundPreload(positions));
+    from = from.filter(function (n) {
+      var k = (meta[n._pidx] || {}).kind;
+      return k !== 'screen' && k !== 'pavlovia' && k !== 'preload_bg';
+    });
+  }
+
+  var p = (meta[c] || {}).position;
+  if (p && ['reinstate', 'practice_end', 'main', 'break'].indexOf(kind) !== -1) {
+    var b = Loader.block(p);
+    out = out.concat(PairsPhase.gateNodes(b));
+    if (kind === 'practice_end' || kind === 'main') {
+      out = out.concat(EpisodesPhase.reinstateNodes(jsPsych, b));
+    }
+  }
+  console.log('[Progress] Resuming at node ' + c + ' (' + kind + '), segment ' +
+              Progress.segment() + '.');
+  return out.concat(from);
 }
 
 // ---------------------------------------------------------------------------

@@ -216,10 +216,10 @@ var CONFIG = {
   },
 
   // -----------------------------------------------------------------------
-  // Researcher contact, shown on the final screen ("If you have any
-  // questions...") and on the error screen if the upload fails.
+  // Researcher contact, shown only on the error screen if the upload fails
+  // (the thank-you screen has no contact sentence).
   //
-  // CHANGE THIS before recruiting. validate.js warns while it still holds
+  // CHANGE THIS before recruiting, to a neutral institutional address. validate.js warns while it still holds
   // the placeholder.
   // -----------------------------------------------------------------------
   researcher_contact: 'CHANGE_ME@example.com',
@@ -372,7 +372,7 @@ var CONFIG = {
   //    8. rest (1 minute)             blocks.rest
   //    9. block 2: as block 1, with the second episode
   //   10. word ratings                blocks.words
-  //   11. state items                 blocks.state
+  //   11. CDS items (4, trait format) blocks.cds
   //   12. save, 13. completion screen
   //
   // Within each block: blocks.practice (the practice trials) and
@@ -395,7 +395,7 @@ var CONFIG = {
     main:         true,   // the 200 main trials of each block
     rest:         true,   // the fixed rest between the two blocks
     words:        true,   // word ratings, once, after block 2
-    state:        true,   // four state items at the end
+    cds:          true,   // four CDS items (trait format) at the end
     positions:    [1, 2], // block positions to run (dev.html only may change)
   },
 

@@ -7,7 +7,7 @@ analysable table.
 Experiment: two-alternative forced choice between two edits of the same
 photograph (local contrast and/or colour saturation), in **two blocks**
 about two different episodes, plus episode questions, word ratings and
-state items. Stimulus package **v5c_180** (frozen; v5b_180 before it). On GitHub
+four CDS items. Stimulus package **v5c_180** (frozen; v5b_180 before it). On GitHub
 Pages uploaded via DataPipe (experiment `VoYGtg5yKGr2`, a **test**
 experiment until data collection — see README.md) to Zenodo
 (`[Zenodo record — to complete]`); on Pavlovia stored in the private
@@ -49,13 +49,22 @@ stamp in the middle (or `session_start_time`), not that. A pilot run
 downloaded to the computer that ran it.
 
 A full session produces **1254 rows** (1255 on Pavlovia, one or two more
-if ID entry needed a retry) and about **175 columns** (178 for participants,
-172 for controls). The columns differ slightly between the
+if ID entry needed a retry) and about **190 columns** (192 for participants,
+186 for controls). Each interruption that was resumed adds about six rows
+(the `resume` row, full screen, the window check, the download start, and
+inside a block its preload gate and reinstatement screen) and, once, the 12
+`resume` columns (§16). The columns differ slightly between the
 groups: the episode answers are `ep_derealization_*` and `ep_ordinary_*`
 for participants, `ep_ordinary_*` only for controls (§6).
 
-**Nothing is saved until the very end.** The upload happens after the last
-screen. A participant who closes the tab before then leaves no file. Two
+**Nothing is uploaded until the very end.** The upload happens after the
+last screen. A participant who closes the tab before then leaves no file
+**unless they open the link again in the same browser**: the page keeps
+its progress and every response in that browser's storage and continues
+the session where it stopped (README, "Interruptions"). Such a session is
+still **one file**, with every response once; `segment` says which rows
+came before and after each interruption, and a `resume` row records each
+interruption (§16). Two
 early exits also leave no file, by design:
 
 - **"I do not agree"** on the consent screen ends the session at once;
@@ -132,11 +141,12 @@ of trials also carry `block_position` (1 or 2).
 | 7 | Gamma match | *(empty)* | 3 | `gamma_*` (session-level, §5) |
 | 8 | Episode selection | `episode` | 2 | one row per screen, with `episode`; the answers as `ep_*` columns on every row (§6) |
 | 9 | **Block 1** | `preload`, `block_start`, `reinstate`, `practice_intro`, `pairs`, `fixation`, `practice_feedback`, `blank`, `practice_end`, `catch_lockout`, `break`, `block_end` | 617 | **the data** (§7). 3 practice + 200 main `pairs` rows |
-| 10 | Rest | `rest` | 1 | `rest_ms`, `rest_extra_ms`; `rest_start`, `rest_end` session-level |
+| 10 | Rest | `rest` | 1 | `rest_ms`, `rest_extra_ms`, `rest_resumed_left_ms` (only when the rest was resumed after an interruption: the ms that remained; empty otherwise); `rest_start`, `rest_end` session-level |
 | 11 | **Block 2** | as block 1 | 617 | as block 1 |
 | 12 | Word ratings | `word_instructions`, `word_ratings` | 1 + 1 | the ten ratings (§9); `rating_foggy`, `rating_faded` session-level |
-| 13 | State items | `state` | 1 | `state_q02` … `state_q29` (§10) |
-| 14 | Save | *(empty)* | 2 | end-of-session stamps (§5); the upload or download step |
+| 13 | CDS items | `cds` | 1 | `cds_q02_freq` … `cds_q29_score` (§10) |
+| 14 | Save | *(empty)* | 2 | end-of-session stamps (§5), including `data_filename`; the upload or download step |
+| — | **Only after an interruption:** the resume screen, then full screen and the window check again, the background download, and inside a block its preload gate (and the reinstatement screen) | `resume`, then as listed | 1 + … | the interruption (§16). Each resumed session also repeats the screen that was interrupted, from the point in the README's table |
 
 Within a block, in order:
 
@@ -501,17 +511,28 @@ no responses.
 
 ---
 
-## 10. The state items (`block == 'state'`)
+## 10. The CDS items (`block == 'cds'`)
 
-One row, at the end of the session. "Right now, at this moment:" followed
-by four items from a published questionnaire (items 2, 13, 19 and 29),
-fixed order, each 0 = not at all … 6 = completely; all four must be
-answered.
+One row, after the word ratings. Items 2, 13, 19 and 29 of the Cambridge
+Depersonalisation Scale in the **trait format** (over the last six
+months), in that order, with the published instructions and wording
+(only "circle" replaced by "select"). They replace the earlier state
+items ("Right now, at this moment"), which are no longer asked.
 
-| column | meaning |
+Each item asks for the **frequency** first (no default). The **duration**
+options appear only when the frequency is not 0, and are then required;
+setting the frequency back to 0 clears and hides them. Continue stays
+disabled until every item is complete.
+
+| column (for `q02`, `q13`, `q19`, `q29`) | meaning |
 |---|---|
-| `state_q02`, `state_q13`, `state_q19`, `state_q29` | 0–6 |
+| `cds_<q>_freq` | 0 never, 1 rarely, 2 often, 3 very often, 4 all the time |
+| `cds_<q>_dur` | 1 few seconds, 2 few minutes, 3 few hours, 4 about a day, 5 more than a day, 6 more than a week; **0 when not asked** (frequency 0), as in the CDS scoring |
+| `cds_<q>_score` | frequency + duration, 0–10 |
 | `rt` | ms from the screen appearing to pressing Continue |
+
+Sessions from before this version have `state_q02` … `state_q29` (0–6,
+"right now") instead; the two are not comparable.
 
 ---
 
@@ -618,7 +639,9 @@ For a complete, usable session:
 | `ep_*_words` | not empty for each recalled episode |
 | a `word_ratings` row | present, all ten `word_*` filled |
 | `rating_foggy`, `rating_faded` | not empty |
-| a `state` row | present, all four `state_q*` filled |
+| a `cds` row | present; every `cds_*_freq` 0–4, `cds_*_dur` 1–6 (0 where the frequency is 0), `cds_*_score` their sum |
+| `resume_count` | 0 for an uninterrupted session; otherwise that many `resume` rows (§16) |
+| rows where `block == 'pairs'`, per `block_position`, `phase` and `block_trial` | each exactly once, interrupted or not |
 | `gamma_estimate` | not empty |
 | `chosen` missing (image trials) | 0 |
 | `no_response` true | 0 |
@@ -632,8 +655,11 @@ For a complete, usable session:
 
 These are written by jsPsych or its plugins rather than by the experiment:
 
-`trial_index` (row counter), `internal_node_id` (timeline address),
-`time_elapsed` (ms since the session started), `stimulus` (the screen's raw
+`trial_index` (row counter; it continues across interruptions, so it is
+unique and increasing in every file), `internal_node_id` (timeline
+address), `time_elapsed` (ms since the page was opened: it **starts again
+at 0 in each segment** after an interruption, so use the UTC stamps for
+times across segments), `stimulus` (the screen's raw
 HTML), `value`, `success` and `timeout` (download step), `failed_audio`,
 `failed_video`, `calibration_step`, `gamma_matches`, `gamma_arrangement`,
 `button_pressed` (button screens).
@@ -683,3 +709,67 @@ upload can be tested quickly; those rows carry `is_test` / `is_dev` =
 `true` and should be deleted or ignored. Restrict access to the contact
 record, and delete it when your ethics approval requires, independently of
 the response data.
+
+---
+
+## 16. Interruptions and resuming
+
+A session interrupted by a reload or a closed tab, and opened again with
+the same link in the same browser, continues where it stopped (README,
+"Interruptions"). It is still one file. No time limit is enforced: the
+columns below record each interruption, and the analysis decides.
+
+**On every row**
+
+| column | meaning |
+|---|---|
+| `segment` | 0 for rows before any interruption, 1 after the first resumption, and so on |
+| `resume_available` | `True` if the browser's storage worked (the session could have been resumed); `False` if it was unavailable (blocked, or a write failed) |
+| `resume_count` | the number of interruptions resumed; 0 if never interrupted |
+| `resume_gap_total_s` | the sum of `gap_seconds` over the interruptions; 0 if none |
+| `resume_storage_error` | UTC, only if a write to the browser's storage failed during the session: from then on the session could not be resumed. Empty otherwise |
+| `data_filename` | the file name the responses were saved under. A session resumed **at the saving step** adds `_resumed<n>` (`n` = its segment), so the upload never clashes with a file an earlier attempt may have saved |
+
+**The `resume` row** (one per interruption, the first row of its segment;
+times are UTC, ISO 8601, like every other time stamp — the Japan-time stamp
+in the file name stays the session's start)
+
+| column | meaning |
+|---|---|
+| `resume_n` | 1 for the first interruption, 2 for the second, … (= its `segment`) |
+| `interrupted_at` | the time of the last saved response or screen before the interruption |
+| `left_page_at` | when the page was closed or reloaded, if the browser reported it (`pagehide`); empty after a crash or a forced quit |
+| `resumed_at` | when Continue was pressed on the resume screen |
+| `gap_seconds` | whole seconds from `interrupted_at` to `resumed_at` |
+| `interrupted_phase` | the part of the session that was on screen: `consent`, `screen`, `id`, `setup`, `brightness`, `gamma`, `episodes`, `reinstate`, `gate` (a block's image download), `block_start`, `reinstate`, `practice`, `practice_end`, `main`, `tail` (the blank after a trial), `break`, `block_end`, `rest`, `words`, `cds`, `save` |
+| `interrupted_block` | that screen's `block` value (e.g. `pairs`, `fixation`, `break`) |
+| `interrupted_block_position`, `interrupted_trial` | the block (1 or 2) and the trial (`block_trial`), where they apply |
+| `resumed_from` | where the session continued: the restart point (same values as `interrupted_phase`). `reinstate` = the block's practice from its start; `main` = the exact trial |
+| `restarted_screens` | the screens whose rows were dropped because they were started again, separated by `\|`, e.g. `episode:derealization`, `practice_intro\|fixation\|pairs:P1_01\|…`. Empty if nothing was dropped |
+| `contact_saved_before_resume` | whether the name/email upload had already succeeded before the interruption (it is then **not** repeated); empty if no name or email had been given |
+
+**On the `participant_id` row** of a resumed segment, `contact_upload_skipped
+= True` when the name/email upload was not repeated.
+
+**The rest,** when interrupted, resumes with the time that remained
+(saved every second): `rest_resumed_left_ms` on the `rest` row, and
+`rest_start` keeps the time the rest first began.
+
+**Durations.** `session_duration_s` and `task_duration_s` run from the
+first segment's start to the end, so they **include** the gaps; subtract
+`resume_gap_total_s` for an estimate of the time actually spent.
+
+**What is kept.** Trials and screens completed before the interruption
+are kept, once. Rows of a screen that is started again (for example the
+first episode screen when the second was interrupted, or the practice
+trials already done) are dropped and listed in `restarted_screens`. A
+trial that was shown but not answered leaves no row; the same trial is
+shown again. The assignment, lists, order, catch targets and breaks are
+those of the first segment.
+
+**After a resumption,** the resumed segment begins with the `resume` row,
+`fullscreen` and `window_check` (the full-screen size is measured again:
+`viewport_*_fs` hold the latest values), then, inside a block, `preload`
+and (before a practice-end screen or a main trial) `reinstate`. These are
+extra rows; `block1_start` and the other session stamps keep their first
+values.

@@ -64,7 +64,6 @@
  * PLACEHOLDERS, to be replaced before recruiting
  * -----------------------------------------------
  *  - consent.*      the whole consent text (PLACEHOLDER, see below)
- *  - state.items    the four questionnaire items (paste the exact wording)
  *  - the session and block lengths, [TO COMPLETE after pilot]
  * Bracketed gaps like [researcher names] anywhere in this file are detected
  * by validate.js: a warning in debug mode, an error on index.html with
@@ -506,6 +505,7 @@ var TEXT_EN = {
 
     // Set-up screen, before the brightness screen. No checkbox.
     setup_title: 'Before you start',
+    // The reload warning (session.reload_warning) is added at the end.
     setup_body:
       '<p><b>Position:</b> please place the computer on a desk or table, ' +
       'ideally with the screen at about eye level. If this is not possible, ' +
@@ -639,8 +639,6 @@ var TEXT_EN = {
     body:         '<p>Your responses have been saved.</p>' +
                   '<p>Thank you very much for taking part in this study. ' +
                   'You may now close this page.</p>',
-    contact_line: 'If you have any questions about the study, please contact ' +
-                  '{CONTACT}.',
 
     fail_title:   'Your responses could not be saved automatically',
     fail_body:    '<p>This is usually caused by a network problem.</p>' +
@@ -653,22 +651,66 @@ var TEXT_EN = {
                   'emailed it, you may close this page.',
   },
 
-  // --- State items (optional block at the end) --------------------------
-  // >>> PLACEHOLDERS: paste the exact published English wording of items
-  // 2, 13, 19 and 29 into `label`. Keep the ids and the order. <<<
-  // Same 0-6 scale as the word ratings; every item must be answered.
-  state: {
-    lead_in:     'Right now, at this moment:',
-    anchor_low:  'not at all',
-    anchor_high: 'completely',
+  // --- Session: reload, resuming, completion ----------------------------
+  session: {
+    // On the set-up screen and before block 1's practice (main.js,
+    // pairs.js), and on the resume screen.
+    reload_warning:
+      '<p>Please do not reload or close this page until the final screen ' +
+      'confirms that your responses have been saved. Doing so interrupts the ' +
+      'study, and your responses may be lost.</p>',
+
+    // Shown when the link of an unfinished session is opened again in the
+    // same browser. Only Continue is offered.
+    resume_title:  'The study was interrupted',
+    resume_body:
+      '<p>The study was interrupted before it was finished. Your earlier ' +
+      'responses have been kept, and the study will continue from the point ' +
+      'where it was interrupted. Part of the study may be shown again.</p>' +
+      '<p>The study will return to full screen when you continue.</p>',
+    resume_button: 'Continue',
+
+    // Shown, and nothing else, when the link of a completed session is
+    // opened again in the same browser.
+    completed:
+      '<p>You have already completed this study. Thank you for your ' +
+      'participation.</p>',
+  },
+
+  // --- CDS items (after the word ratings) -------------------------------
+  // Items 2, 13, 19 and 29 of the Cambridge Depersonalisation Scale, trait
+  // format, in this order. The instructions and the items are VERBATIM
+  // (only "circle" replaced by "select"); do not edit them for style.
+  // Each item: the frequency (0-4, no default); when it is not 0, the
+  // duration (1-6) appears and is required.
+  cds: {
+    instructions:
+      '<p>PLEASE READ INSTRUCTIONS CAREFULLY:</p>' +
+      '<p>This questionnaire describes strange and \u2018funny\u2019 ' +
+      'experiences that normal people may have in their daily life. We are ' +
+      'interested in their: (a) frequency, i.e. how often have you had these ' +
+      'experiences OVER THE LAST SIX MONTHS; and (b) their approximate ' +
+      'duration. For each question, please select the answers that suit you ' +
+      'best. If you are not sure, give your best guess.</p>',
     items: [
-      { id: 'q02', label: '[CDS item 2: paste wording]' },
-      { id: 'q13', label: '[CDS item 13: paste wording]' },
-      { id: 'q19', label: '[CDS item 19: paste wording]' },
-      { id: 'q29', label: '[CDS item 29: paste wording]' },
+      { id: 'q02', label: 'What I see looks \u2018flat\u2019 or \u2018lifeless\u2019, ' +
+                          'as if I were looking at a picture.' },
+      { id: 'q13', label: 'My surroundings feel detached or unreal, as if ' +
+                          'there were a veil between me and the outside world.' },
+      { id: 'q19', label: 'Objects around me seem to look smaller or further ' +
+                          'away.' },
+      { id: 'q29', label: 'Previously familiar places look unfamiliar, as if I ' +
+                          'had never seen them before.' },
     ],
+    // Frequency 0..4 and duration 1..6, in this order.
+    freq_options: ['never', 'rarely', 'often', 'very often', 'all the time'],
+    dur_heading:  'In general, it lasts:',
+    dur_options:  ['few seconds', 'few minutes', 'few hours', 'about a day',
+                   'more than a day', 'more than a week'],
+    incomplete:
+      'Please answer every item to continue. For each experience you have ' +
+      'had, please also select how long it generally lasts.',
     button_submit: 'Continue',
-    progress:      '{DONE} of {TOTAL} answered',
   },
 
   // --- Breaks -----------------------------------------------------------
