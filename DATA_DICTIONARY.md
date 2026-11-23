@@ -49,8 +49,11 @@ stamp in the middle (or `session_start_time`), not that. A pilot run
 downloaded to the computer that ran it.
 
 A full session produces **1254 rows** (1255 on Pavlovia, one or two more
-if ID entry needed a retry) and about **175 columns** (178 for participants,
-172 for controls). The columns differ slightly between the
+if ID entry needed a retry) and about **190 columns** (192 for participants,
+186 for controls). Each interruption that was resumed adds about six rows
+(the `resume` row, full screen, the window check, the download start, and
+inside a block its preload gate and reinstatement screen) and, once, the 12
+`resume` columns (§16). The columns differ slightly between the
 groups: the episode answers are `ep_derealization_*` and `ep_ordinary_*`
 for participants, `ep_ordinary_*` only for controls (§6).
 
