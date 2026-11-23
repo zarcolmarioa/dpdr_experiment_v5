@@ -1,7 +1,7 @@
 /* =========================================================================
- * text/ja/words.js — the ten words rated in the word-rating task, Japanese.
+ * text/ja/words.js: the ten words rated in the word-rating task, Japanese.
  *
- * ⚠️  DRAFT TRANSLATION — NOT REVIEWED BY A NATIVE SPEAKER  ⚠️
+ * ⚠️  DRAFT TRANSLATION, NOT REVIEWED BY A NATIVE SPEAKER  ⚠️
  * (the ten word labels are the registered Japanese; the instruction and
  * question are drafts, listed in text/ja/STRINGS_TO_CHECK.md)
  *
@@ -10,7 +10,7 @@
  * the imagined experience. The two TARGETS are foggy (霞がかった) and faded (色あせた),
  * promoted to rating_foggy and rating_faded on every row.
  *
- * `id` values must match text/en/words.js exactly — they are the output
+ * `id` values must match text/en/words.js exactly: they are the output
  * column names, and validate.js checks both lists against the registered
  * ten. Only `label` is participant-facing.
  *
@@ -30,7 +30,7 @@ var WORDS_JA = {
       '見え方をどの程度よく表していますか。</b></p>' +
       '<p>すべての言葉について、0（まったく当てはまらない）から6（非常に' +
       'よく当てはまる）で評価してください。まったく当てはまらない言葉も' +
-      'あります。それで構いませんので、すべての言葉について回答して' +
+      'ありますが、その場合も、すべての言葉についてご回答' +
       'ください。</p>',
     control:
       '<p>次の画面に言葉のリストが表示されます。</p>' +
@@ -38,7 +38,7 @@ var WORDS_JA = {
       '風景の見え方を、どの程度よく表していると思いますか。</b></p>' +
       '<p>すべての言葉について、0（まったく当てはまらない）から6（非常に' +
       'よく当てはまる）で評価してください。まったく当てはまらない言葉も' +
-      'あります。それで構いませんので、すべての言葉について回答して' +
+      'ありますが、その場合も、すべての言葉についてご回答' +
       'ください。</p>',
   },
 

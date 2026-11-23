@@ -48,9 +48,9 @@ stamp in the middle (or `session_start_time`), not that. A pilot run
 (Pavlovia's **Pilot** button) is not stored on Pavlovia: the same file is
 downloaded to the computer that ran it.
 
-A full session produces **1253 rows** (1254 on Pavlovia, one or two more
-if ID entry needed a retry) and about **170 columns** (174 for participants,
-168 for controls). The columns differ slightly between the
+A full session produces **1254 rows** (1255 on Pavlovia, one or two more
+if ID entry needed a retry) and about **175 columns** (178 for participants,
+172 for controls). The columns differ slightly between the
 groups: the episode answers are `ep_derealization_*` and `ep_ordinary_*`
 for participants, `ep_ordinary_*` only for controls (§6).
 
@@ -127,7 +127,8 @@ of trials also carry `block_position` (1 or 2).
 | 4 | Size check | `size_check` | 0 | **developer screen, off for participants** (dev preset only) |
 | 5 | Participant details (ID + optional name and email) | `participant_id` | 1 | the ID, how it arrived, and **whether** a name / email was given (§5); on Pavlovia also `contact_name`, `contact_email` |
 | — | ID stamp, background download start | *(empty)* | 2 | — |
-| 6 | Brightness (+ viewing-conditions note) | `calibration_brightness` | 1 | `brightness_confirmed` (session-level) |
+| 6a | Set-up screen: position of the computer, no phone or other devices | `setup` | 1 | nothing but its `rt` (time on the screen). No checkbox |
+| 6b | Brightness (charger, automatic features, lighting) | `calibration_brightness` | 1 | `brightness_confirmed`, `lighting_confirmed` (session-level) |
 | 7 | Gamma match | *(empty)* | 3 | `gamma_*` (session-level, §5) |
 | 8 | Episode selection | `episode` | 2 | one row per screen, with `episode`; the answers as `ep_*` columns on every row (§6) |
 | 9 | **Block 1** | `preload`, `block_start`, `reinstate`, `practice_intro`, `pairs`, `fixation`, `practice_feedback`, `blank`, `practice_end`, `catch_lockout`, `break`, `block_end` | 617 | **the data** (§7). 3 practice + 200 main `pairs` rows |
@@ -144,9 +145,9 @@ Within a block, in order:
 | `preload` | 0–1 | waits for any of the block's images that the background download has not fetched yet (`success`, `failed_images`) |
 | `block_start` | 1 | stamps `block<p>_start` |
 | `reinstate` | 1 | names the block's episode and shows the participant's own words (§6) |
-| `practice_intro` | 1 | the task (block 1); before block 2, that the question has changed and the new question |
-| `pairs` + `fixation` + `practice_feedback` + `blank` | 3 × 4 | the 3 practice trials, each followed by its feedback screen (the chosen image outlined) |
-| `practice_end` | 1 | |
+| `practice_intro` | 1 | the task, keyed by the block's episode (block 1, with the arrow keys); before block 2, that the second part works the same way, that the question has changed, the new question and the task |
+| `pairs` + `fixation` + `practice_feedback` + `blank` | 3 × 4 | the 3 practice trials, each followed by its feedback screen. **First practice trial:** arrows under the images while choosing; then only the chosen image stays, with a message confirming the participant's choice, for 3 s (`feedback_display = 'chosen_only'`). **Second and third:** the chosen image outlined for 0.9 s (`feedback_display = 'outline'`) |
+| `practice_end` | 1 | breaks and attention-check screens explained; no trial count or duration |
 | `pairs`, `fixation`, `blank`, `catch_lockout` | 200 + 195 + 195 + 5 | the 200 main trials, in the list's order. Catch trials have no fixation or blank: a `catch_lockout` row (750 ms, keys disabled), then the `pairs` row with the response |
 | `break` | 4 | after main trials 40, 80, 120 and 160 of the block (design.json `timing.breaks_after_trial`) |
 | `block_end` | 1 | stamps `block<p>_end` and `catch_fail_b<p>` |
@@ -279,7 +280,8 @@ slot 130 row 2, and so on.
 
 | column | meaning |
 |---|---|
-| `brightness_confirmed` | ticked "brightness at maximum". Always `True` for a completed session |
+| `brightness_confirmed` | ticked "My screen brightness is set to maximum." Required, so always `True` for a completed session |
+| `lighting_confirmed` | ticked "The room I am in has good, steady lighting." Required, so always `True` for a completed session |
 | `gamma_estimate` | **the one to use**: the median of the three matches |
 | `gamma_estimate_1` … `_3` | the estimate from each match |
 | `gamma_grey_match_1` … `_3` | the grey level (0–255) chosen in each match |
@@ -311,11 +313,13 @@ the order design.json lists them (not the block order).
 | control | `ordinary`: an episode from the last six months | `expectation`: the short description of derealization; no questions |
 
 Each **recalled** episode (not the expectation) asks for a few identifying
-words and five questions that only help bring it back. **Every question
-must be answered; "Prefer not to say" is an answer**, so nobody skips one
-by accident and nobody is forced to disclose. There is no default answer:
-Continue stays disabled until all are answered. Nothing is asked about
-clarity, vividness or colour.
+words and five questions that only help bring it back. **Required:** the
+identifying words, the emotional tone and the intensity; the scales have
+no default, and Continue stays disabled until all three are answered.
+**Optional** (marked "(optional)"): when, how long and where; a question
+left blank is saved as an **empty cell** (an empty string, not `null`).
+There is no "Prefer not to say". Nothing is asked about clarity, vividness
+or colour.
 
 The answers are stamped on **every row** as `ep_<episode>_<question>`
 (e.g. `ep_derealization_words`, `ep_ordinary_tone`), and also on that
@@ -323,17 +327,19 @@ screen's own row.
 
 | column | question on screen | values |
 |---|---|---|
-| `ep_<episode>_words` | A few words to identify this episode (hint: *e.g. walking home after work*) | the typed text, trimmed. Required; never `prefer_not` |
-| `ep_<episode>_when` | When was it? (hint: *e.g. last week, about two months ago*) | the typed text, or `prefer_not` |
-| `ep_<episode>_duration` | How long did it last? (hint: *e.g. a few seconds, about an hour*) | the typed text, or `prefer_not` |
-| `ep_<episode>_where` | Where were you? (hint: *e.g. at home, on a train, in a shop*) | the typed text, or `prefer_not` |
-| `ep_<episode>_tone` | How did it feel emotionally? | `-3` (very unpleasant) … `3` (very pleasant), or `prefer_not` |
-| `ep_<episode>_intensity` | How emotionally intense was it? | `0` (not at all intense) … `6` (extremely intense), or `prefer_not` |
+| `ep_<episode>_words` | A few words to identify this episode (hint: *e.g. walking home after work*) | the typed text, trimmed. **Required** |
+| `ep_<episode>_when` | When was it? (optional) (hint: *e.g. last week, about two months ago*) | the typed text, trimmed, or empty if left blank |
+| `ep_<episode>_duration` | How long did it last? (optional) (hint: *e.g. a few seconds, about an hour*) | the typed text, trimmed, or empty if left blank |
+| `ep_<episode>_where` | Where were you? (optional) (hint: *e.g. at home, on a train, in a shop*) | the typed text, trimmed, or empty if left blank |
+| `ep_<episode>_tone` | How did it feel emotionally? | `-3` (very unpleasant) … `3` (very pleasant). **Required** |
+| `ep_<episode>_intensity` | How emotionally intense was it? | `0` (not at all intense) … `6` (extremely intense). **Required** |
 
 Participants have `ep_derealization_*` and `ep_ordinary_*`; controls have
-`ep_ordinary_*` only. Because `prefer_not` can stand in a numeric column,
-convert with `pd.to_numeric(..., errors='coerce')` after counting the
-`prefer_not` answers.
+`ep_ordinary_*` only. The tone and intensity columns are always numeric.
+pandas reads an empty optional answer as `NaN`; use
+`keep_default_na=False` (or `.fillna('')`) if you want it as an empty
+string. Sessions run before this version could contain `prefer_not` in
+any of these columns; this version never writes it.
 
 The free-text answers (up to 200 characters) are in the participant's own
 words and language, so they need coding before analysis. They are stored
@@ -430,7 +436,9 @@ Copied unchanged from the list into every row. See the package's
 | `chosen` | **`A` or `B`**: the image chosen, from `response_side` and `a_is_left`. Empty on catch rows |
 | `rt` | **ms** from image onset to keypress (catch rows: from the end of the 750 ms lockout). No time limit and no minimum response time: responses under 300 ms are part of the attention check, applied in the analysis |
 | `no_response` | should always be `False`. If `True`, key handling failed and the row needs checking |
-| `practice_feedback` | `True` on practice rows followed by a feedback screen |
+| `practice_feedback` | `True` on practice rows followed by a feedback screen; `False` on main and catch rows |
+| `feedback_display` | the feedback screen after this practice trial: `chosen_only` (first practice trial of a block: only the chosen image stays, with the message, for `timing.first_feedback_ms`, 3000 ms), `outline` (the chosen image outlined for `timing.practice_feedback_ms`, 900 ms), or empty (no feedback: main and catch rows). The `practice_feedback` rows carry the same value |
+| `arrows_shown` | `True` when ← and → were shown under the images while choosing (the first practice trial of each block), else `False` |
 
 ### Display verification
 
@@ -601,7 +609,10 @@ For a complete, usable session:
 | `list_trial_type` counts per block | 54 sat_only, 54 fog_only, 36 together, 36 conflict, 15 consistency, 5 catch, 3 practice |
 | main rows per block, in `block_trial` order | identical to `b<p>_list`'s `item_id` order |
 | `break` rows | 4 per block |
-| `practice_feedback` rows | 3 per block |
+| `practice_feedback` rows | 3 per block: `feedback_display` `chosen_only`, `outline`, `outline` |
+| `arrows_shown` true | 2 rows (the first practice trial of each block) |
+| a `setup` row | present, before `calibration_brightness` |
+| `brightness_confirmed`, `lighting_confirmed` | both `True` |
 | a `rest` row | present; `rest_end` − `rest_start` ≥ 60 s |
 | `catch_fail_b1`, `catch_fail_b2`, `catch_fail_total` | 0–5, 0–5, their sum |
 | `ep_*_words` | not empty for each recalled episode |

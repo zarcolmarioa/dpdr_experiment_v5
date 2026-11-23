@@ -43,7 +43,19 @@ html, body {
 .card h2 { margin-top: 0; font-size: 1.3rem; text-align: center; }
 .card p  { margin: .8rem 0; }
 
-.card .hint { font-size: .9rem; color: #555; text-align: center; }
+.card .hint { font-size: .9rem; color: #555; text-align: justify; }
+
+/* Alignment rule (src/text-align.js): text that fits on one line is
+   centred, text that wraps is justified. Titles, buttons and the question
+   above the images are always centred. */
+.card p, .card li, .calibration-card p, .calibration-card li {
+  text-align: justify;
+  text-justify: inter-character;   /* even spacing for Japanese */
+}
+.card .one-line, .calibration-card .one-line,
+.check-line span.one-line { text-align: center; }
+.check-line span.multi-line { text-align: justify; }
+.card button, .calibration-card button, .jspsych-btn { text-align: center; }
 
 .id-echo {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -60,7 +72,10 @@ html, body {
 
 .stim-prompt {
   text-align: center;
-  font-size: 1.05rem;
+  margin-left: auto;    /* max-width (the two images) set inline */
+  margin-right: auto;
+  font-size: 1.5rem;
+  line-height: 1.35;
   color: #f0f0f0;
   margin-bottom: 1.2rem;
   text-shadow: 0 1px 3px rgba(0,0,0,.4);
@@ -120,7 +135,29 @@ html, body {
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(0,0,0,.25);
+  position: relative;   /* anchors the arrow key under it */
 }
+
+/* First practice trial: the arrow key under each image. Absolutely
+   positioned, so the layout does not move; screen-check.js measures it. */
+.stim-key {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: #f0f0f0;
+  text-shadow: 0 1px 3px rgba(0,0,0,.4);
+  pointer-events: none;
+}
+/* The dev label goes below the arrows when they are shown. */
+.stim-row.has-keys .dev-trial-label { top: calc(100% + 6px + 1.9rem + 8px); }
+
+/* First practice trial, after the response: the image not chosen is not
+   shown, but its space is kept, so the chosen one stays in place. */
+.stim-panel-hidden { visibility: hidden; }
 
 /* Escape hatch: only applied when CONFIG.display.allow_scaling is true.
    Permits the panels to shrink on small screens, at the cost of the
@@ -745,6 +782,7 @@ body.allow-scaling .stim-panel {
 .aq-opt input[type="checkbox"] { margin: 0; accent-color: #4a6fa5; cursor: pointer; }
 .aq-opt:has(input[type="checkbox"]:checked) { border-color: #4a6fa5; background: #eef3fa; }
 .aq-incomplete { margin: .6rem 0 0; font-size: .85rem; }
+.aq-optional-tag { font-weight: normal; color: #777; font-size: .85em; }
 .calib-btn[disabled] { opacity: .45; }
 
 /* --- Reinstatement and rest ------------------------------------------- */

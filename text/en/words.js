@@ -1,5 +1,5 @@
 /* =========================================================================
- * text/en/words.js — the ten words rated in the word-rating task.
+ * text/en/words.js: the ten words rated in the word-rating task.
  *
  * WHEN THEY ARE RATED
  * -------------------
@@ -45,16 +45,16 @@ var WORDS_EN = {
       'interview</b> (<span class="ep-words">{WORDS}</span>).</p>' +
       '<p><b>During that episode, how well does each word describe how your ' +
       'surroundings looked?</b></p>' +
-      '<p>Rate every word from 0 (not at all) to 6 (exactly). Some words will ' +
-      'not apply at all. That is expected &mdash; please rate every word ' +
-      'anyway.</p>',
+      '<p>Please rate every word from 0 (not at all) to 6 (exactly). Some ' +
+      'words will not apply at all. This is expected; please rate every ' +
+      'word nonetheless.</p>',
     control:
       '<p>On the next screen you will see a list of words.</p>' +
       '<p><b>How well does each word describe how the surroundings might ' +
       'look to someone experiencing derealization?</b></p>' +
-      '<p>Rate every word from 0 (not at all) to 6 (exactly). Some words will ' +
-      'not apply at all. That is expected &mdash; please rate every word ' +
-      'anyway.</p>',
+      '<p>Please rate every word from 0 (not at all) to 6 (exactly). Some ' +
+      'words will not apply at all. This is expected; please rate every ' +
+      'word nonetheless.</p>',
   },
 
   // The one-line header above the grid.
