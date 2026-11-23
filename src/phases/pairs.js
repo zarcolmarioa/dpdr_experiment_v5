@@ -509,9 +509,28 @@ var PairsPhase = (function () {
   // reinstatement screen's nodes (phases/episodes.js), shown after the
   // block starts and before the practice.
   // -----------------------------------------------------------------------
+  // Resume metadata (progress.js): which part of the session a node
+  // belongs to, whether it is a restart point, and whether answering it
+  // moves the restart point on. main.js reads node._res.
+  function _tagAll(list, meta, position) {
+    list.forEach(function (n, i) {
+      n._res = Object.assign({ position: position }, meta(n, i));
+    });
+    return list;
+  }
+
+  // The preload gate alone, for a session resumed inside this block.
+  function gateNodes(b) {
+    var practice = CONFIG.blocks.practice ? b.practice : [];
+    var main     = CONFIG.blocks.main     ? b.rows     : [];
+    var images = Loader.blockImageURLs({ practice: practice, rows: main });
+    return images.length ? [_preloadGate(images, b.position)] : [];
+  }
+
   function buildBlockNodes(jsPsych, b, introNodes) {
     var T     = Loader.text();
     var nodes = [];
+    var pos   = b.position;
     var ctx   = {
       position:      b.position,
       episode:       b.episode,
@@ -524,15 +543,22 @@ var PairsPhase = (function () {
     // Preload gate: only the images this block will actually show.
     var shown = { practice: practice, rows: main };
     var images = Loader.blockImageURLs(shown);
-    if (images.length) nodes.push(_preloadGate(images, b.position));
+    if (images.length) {
+      nodes.push(_tagAll([_preloadGate(images, b.position)],
+                         function () { return { kind: 'gate', cp: true }; }, pos)[0]);
+    }
 
-    nodes.push({
+    nodes.push(_tagAll([{
       type: jsPsychCallFunction,
       func: function () { Record.markBlockStart(jsPsych, b); },
       data: { block: 'block_start', block_position: b.position, episode: b.episode },
-    });
+    }], function () { return { kind: 'block_start' }; }, pos)[0]);
 
-    nodes = nodes.concat(introNodes || []);
+    // The reinstatement screen starts the practice unit: interrupted
+    // anywhere in the practice, the session restarts here.
+    nodes = nodes.concat(_tagAll(introNodes || [], function (n, i) {
+      return { kind: 'reinstate', cp: i === 0 };
+    }, pos));
 
     // --- Practice --------------------------------------------------------
     if (practice.length) {
@@ -543,6 +569,7 @@ var PairsPhase = (function () {
           _fill(P.count_line, vars) + T.session.reload_warning
         : P.intro_b2 + _fill(P.question_changed, vars) +
           Loader.byEpisode(P.body_b2, b.episode) + _fill(P.count_line, vars);
+      var pstart = nodes.length;
       nodes.push(_screen(P.title, intro, P.continue_hint,
                          'practice_intro', b.position));
       var pctx = Object.assign({ phase: 'practice' }, ctx);
@@ -555,9 +582,11 @@ var PairsPhase = (function () {
         nodes = nodes.concat(_trialNodes(row, pctx, { arrows: i === 0, feedback: fb },
                                          { n: i + 1, of: practice.length }));
       });
-      nodes.push(_screen(P.end_title,
+      _tagAll(nodes.slice(pstart), function () { return { kind: 'practice' }; }, pos);
+      nodes.push(_tagAll([_screen(P.end_title,
                          b.position === 1 ? P.end_body : P.end_body_b2,
-                         P.end_hint, 'practice_end', b.position));
+                         P.end_hint, 'practice_end', b.position)],
+                 function () { return { kind: 'practice_end', cp: true }; }, pos)[0]);
     }
 
     // --- Main trials -----------------------------------------------------
@@ -569,32 +598,39 @@ var PairsPhase = (function () {
         // Break after `i` completed trials, if i is a break point — never
         // before the first trial or after the last one.
         if (i > 0 && breaks.indexOf(i) !== -1) {
-          nodes.push(_screen(
+          nodes.push(_tagAll([_screen(
             T.brk.title,
             _fill(T.brk.body, { DONE: i, TOTAL: main.length }),
-            T.brk.hint, 'break', b.position));
+            T.brk.hint, 'break', b.position)],
+            function () { return { kind: 'break', cp: true }; }, pos)[0]);
         }
-        if (row.trial_type === 'catch') {
-          nodes = nodes.concat(_catchNodes(row, mctx, b.targets[k++],
-                                           { n: row.trial, of: b.fullLength }));
-        } else {
-          nodes = nodes.concat(_trialNodes(row, mctx, null,
-                                           { n: row.trial, of: b.fullLength }));
-        }
+        // A trial: restart point at its first node (fixation, or the catch
+        // lockout); the response node moves the restart point to what
+        // follows; the blank after it is its tail.
+        var tn = (row.trial_type === 'catch')
+          ? _catchNodes(row, mctx, b.targets[k++], { n: row.trial, of: b.fullLength })
+          : _trialNodes(row, mctx, null, { n: row.trial, of: b.fullLength });
+        var resp = 1;   // the pairs node, or the catch trial's live node
+        nodes = nodes.concat(_tagAll(tn, function (n, j) {
+          if (j === 0)    return { kind: 'main', cp: true, trial: row.trial };
+          if (j === resp) return { kind: 'main', advance: true, trial: row.trial };
+          return { kind: 'tail', trial: row.trial };
+        }, pos));
       });
     }
 
-    nodes.push({
+    nodes.push(_tagAll([{
       type: jsPsychCallFunction,
       func: function () { Record.markBlockEnd(jsPsych, b); },
       data: { block: 'block_end', block_position: b.position, episode: b.episode },
-    });
+    }], function () { return { kind: 'block_end' }; }, pos)[0]);
 
     return nodes;
   }
 
   return {
     buildBlockNodes: buildBlockNodes,
+    gateNodes:       gateNodes,
     trialHTML:       trialHTML,
     imageLevels:     imageLevels,   // dev label; also used by the tests
     levelsLine:      levelsLine,

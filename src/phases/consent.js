@@ -111,6 +111,9 @@ var ConsentPhase = (function () {
         },
         choices: 'NO_KEYS',
         data: { block: 'consent_declined' },
+        // The session ends here: no "Leave this page?" dialog, and nothing
+        // stored to resume (opening the link again starts afresh).
+        on_load: function () { Progress.abandon(); },
       }],
       conditional_function: function () { return _declined; },
     };

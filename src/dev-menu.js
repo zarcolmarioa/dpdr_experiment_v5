@@ -316,6 +316,33 @@ var DevMenu = (function () {
               ? ' (kept in the response file)' : ' (separate DataPipe upload)') + '</td></tr>';
     html += '</table></div>';
 
+    // --- Stored in this browser (progress.js) ------------------------------
+    // Resuming and the completion check share this browser's storage with
+    // index.html (same address), so clearing here also clears what
+    // index.html runs left.
+    var linkPid = ParticipantID.fromURL();
+    var stored  = ready ? Progress.find(Progress.sessionKey(linkPid)) : null;
+    var all     = Progress.listAll();
+    html += '<div class="dev-stored"><h2>Stored in this browser</h2>';
+    if (!Progress.available()) {
+      html += '<p class="dev-preset-note">Browser storage is unavailable: sessions ' +
+              'run without resuming (resume_available = false).</p>';
+    }
+    if (stored) {
+      html += '<p><b>Unfinished dev session for this link</b> (restart point: ' +
+              _esc(stored.cp.kind) + ', node ' + stored.cp.idx + ', ' +
+              stored.cp.rowsAt + ' rows, ' + (stored.log.resumes || []).length +
+              ' earlier interruption(s)). <button class="dev-action" id="dev-resume">' +
+              'Resume it (its own settings)</button></p>';
+    }
+    html += '<p class="dev-preset-note">' + all.progress.length +
+            ' unfinished session(s) stored (index and dev); completion records: ' +
+            (all.completed.length ? all.completed.map(_esc).join(', ') : 'none') +
+            '. A preset below starts a NEW session for this link (its stored ' +
+            'progress is replaced).</p>' +
+            '<p><button class="dev-action" id="dev-clear-stored">Clear all stored ' +
+            'progress and completion records</button></p></div>';
+
     // --- Switchers -------------------------------------------------------
     html += '<div class="dev-switchers">';
     html += '<span>group:</span>';
@@ -399,6 +426,22 @@ var DevMenu = (function () {
     document.body.innerHTML = html;
 
     // --- Wiring ----------------------------------------------------------
+    var resumeBtn = document.getElementById('dev-resume');
+    if (resumeBtn) {
+      resumeBtn.addEventListener('click', function () {
+        // The stored session's own dev settings, then resume.
+        _apply(stored.log.config || {});
+        console.log('[Dev] resuming the stored session for this link.');
+        document.body.innerHTML = '';
+        onStart({ resume: true });
+      });
+    }
+    document.getElementById('dev-clear-stored').addEventListener('click', function () {
+      Progress.clearAll();
+      console.log('[Dev] cleared all stored progress and completion records.');
+      window.location.reload();
+    });
+
     document.getElementById('dev-slot-go').addEventListener('click', function () {
       var v = document.getElementById('dev-slot').value;
       window.location.href = _link({ slot: v || null });

@@ -1,6 +1,6 @@
 # Japanese strings to check
 
-Every participant-facing string that is **new or changed** for the v4 and v5b designs and for the later text changes, with its English, for a native speaker to check. Copied from `text/en/*.js` and `text/ja/*.js` when this list was made, so it matches what the experiment showed then (HTML tags stripped, **bold** kept). If the text files change, check them, not this list.
+Every participant-facing string that is **new or changed** for the v4 and v5b designs and for the later revisions, with its English, for a native speaker to check. Copied from `text/en/*.js` and `text/ja/*.js` when this list was made, so it matches what the experiment showed then (HTML tags stripped, **bold** kept). If the text files change, check them, not this list.
 
 How to use: correct the Japanese **in `text/ja/instructions.js` or `text/ja/words.js`** (the key is given for each string), not in this file. Tick the box when a string is approved.
 
@@ -14,13 +14,194 @@ General rules that apply to every string (see the header of `text/en/instruction
 - formal register (です・ます, お〜ください); no dashes (em dash, en dash or horizontal bar) in any string;
 - the participant and control versions of a string should differ only where the English differs.
 
-**Not listed here:** the ten rated words, which are the registered Japanese (霞がかった, 色あせた, ベールがかかったような, 生気のない, 現実味のない, 夢のような, 遠く感じる, 絵のような, 重苦しい, 不穏な), and the four state items, which are paste-in placeholders for the published wording.
+**Not listed here:** the ten rated words, which are the registered Japanese (霞がかった, 色あせた, ベールがかかったような, 生気のない, 現実味のない, 夢のような, 遠く感じる, 絵のような, 重苦しい, 不穏な). The four CDS items are listed (they are verbatim from the published Japanese CDS, so check them against that version rather than for style).
 
-The strings changed in the latest text revision (formal register, no dashes, the set-up and brightness screens, optional episode questions, the practice texts by episode) come first; then the v5b strings, then the v4 strings that are still in use, each listed once, under the revision that last changed it. The v4 anchoring, grid and normal-appearance grid strings were removed with those screens.
+The strings of the latest revision (reload warning, resuming, completion message, the CDS items) come first; then those of the text revision (formal register, no dashes, the set-up and brightness screens, optional episode questions, the practice texts by episode); then the v5b strings, then the v4 strings that are still in use, each listed once, under the revision that last changed it. The v4 anchoring, grid and normal-appearance grid strings were removed with those screens.
 
-## Latest revision: Consent screen (PLACEHOLDER until the approved text arrives)
+## Latest revision: Reload warning, resume screen, completion message
 
-- [ ] **1. instructions.js → `consent.body`**  
+- [ ] **1. instructions.js → `session.reload_warning`**  
+  _New. On the set-up screen, before block 1's practice and on the resume screen._
+
+  English:
+
+  > Please do not reload or close this page until the final screen confirms that your responses have been saved. Doing so interrupts the study, and your responses may be lost.
+
+  日本語（下書き）:
+
+  > 回答が保存されたことが最後の画面で確認されるまで、このページを再読み込みしたり閉じたりしないでください。再読み込みしたり閉じたりすると実験が中断され、回答が失われる可能性があります。
+
+- [ ] **2. instructions.js → `session.resume_title`**  
+  _New. Shown when the link of an unfinished session is opened again in the same browser._
+
+  English:
+
+  > The study was interrupted
+
+  日本語（下書き）:
+
+  > 実験が中断されました
+
+- [ ] **3. instructions.js → `session.resume_body`**  
+  _New. Only Continue is offered. 保持されており (kept in this browser), not 保存 (which could suggest the server)._
+
+  English:
+
+  > The study was interrupted before it was finished. Your earlier responses have been kept, and the study will continue from the point where it was interrupted. Part of the study may be shown again.
+  > 
+  > The study will return to full screen when you continue.
+
+  日本語（下書き）:
+
+  > 実験は終了する前に中断されました。それまでの回答は保持されており、中断した箇所から実験を再開します。一部の画面がもう一度表示される場合があります。
+  > 
+  > 続けると、全画面表示に戻ります。
+
+- [ ] **4. instructions.js → `session.resume_button`**  
+  _New._
+
+  English:
+
+  > Continue
+
+  日本語（下書き）:
+
+  > 続ける
+
+- [ ] **5. instructions.js → `session.completed`**  
+  _New. Shown, and nothing else, when the link of a completed session is opened again in the same browser._
+
+  English:
+
+  > You have already completed this study. Thank you for your participation.
+
+  日本語（下書き）:
+
+  > この実験はすでに完了しています。ご参加いただき、ありがとうございました。
+
+## Latest revision: CDS items (replace the state items)
+
+- [ ] **6. instructions.js → `cds.instructions`**  
+  _VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style. Note the half-width parentheses and the space before はっきり, kept as given._
+
+  English:
+
+  > PLEASE READ INSTRUCTIONS CAREFULLY:
+  > 
+  > This questionnaire describes strange and ‘funny’ experiences that normal people may have in their daily life. We are interested in their: (a) frequency, i.e. how often have you had these experiences OVER THE LAST SIX MONTHS; and (b) their approximate duration. For each question, please select the answers that suit you best. If you are not sure, give your best guess.
+
+  日本語（下書き）:
+
+  > 以下の質問は、ふつうの人も日常生活で体験するかもしれないちょっと変わった「不思議な」経験に関するものです。
+  > 
+  > (a)ここ半年の間にどれくらいこういった経験をしましたか。(頻度)
+  > 
+  > (b)また、頻度が 0 ではない場合、それらはどれくらい続きましたか。(持続時間)
+  > 
+  > それぞれの質問に、その最もあてはまるものを選択して答えてください。 はっきりと分からない場合には、推測でもかまいません。
+
+- [ ] **7. instructions.js → `cds.items.0.label`**  
+  _Item 2. VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style._
+
+  English:
+
+  > What I see looks ‘flat’ or ‘lifeless’, as if I were looking at a picture.
+
+  日本語（下書き）:
+
+  > 私に見えているものは「平面的」で「生気がない」ように感じられる。まるで絵や写真のようである。
+
+- [ ] **8. instructions.js → `cds.items.1.label`**  
+  _Item 13. VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style._
+
+  English:
+
+  > My surroundings feel detached or unreal, as if there were a veil between me and the outside world.
+
+  日本語（下書き）:
+
+  > まるで、自分と外の世界との間にベールがかかっているかのように、自分の周囲が、自分から隔てられている、あるいは、現実でないような感じがする。
+
+- [ ] **9. instructions.js → `cds.items.2.label`**  
+  _Item 19. VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style._
+
+  English:
+
+  > Objects around me seem to look smaller or further away.
+
+  日本語（下書き）:
+
+  > 自分の周りのものが小さく、あるいは、ずっと遠くに見える。
+
+- [ ] **10. instructions.js → `cds.items.3.label`**  
+  _Item 29. VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style._
+
+  English:
+
+  > Previously familiar places look unfamiliar, as if I had never seen them before.
+
+  日本語（下書き）:
+
+  > もともと慣れ親しんでいた場所が、まるで見たことのない知らない場所のように見える。
+
+- [ ] **11. instructions.js → `cds.freq_options`**  
+  _Frequency 0 to 4, in this order. VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style._
+
+  English:
+
+  > never,rarely,often,very often,all the time
+
+  日本語（下書き）:
+
+  > まったくない,めったにない,ときどき,とてもよく,いつも
+
+- [ ] **12. instructions.js → `cds.dur_heading`**  
+  _**PLEASE CHECK:** the heading above the duration options. The English is “In general, it lasts:”; the Japanese is 持続時間, as given._
+
+  English:
+
+  > In general, it lasts:
+
+  日本語（下書き）:
+
+  > 持続時間
+
+- [ ] **13. instructions.js → `cds.dur_options`**  
+  _Duration 1 to 6, in this order. VERBATIM from the published Japanese CDS; please check it against the version the participants complete, not for style._
+
+  English:
+
+  > few seconds,few minutes,few hours,about a day,more than a day,more than a week
+
+  日本語（下書き）:
+
+  > 数秒間,数分間,数時間,一日程度,数日程度,一週間以上
+
+- [ ] **14. instructions.js → `cds.incomplete`**  
+  _New (not part of the CDS). Shown until every item is complete._
+
+  English:
+
+  > Please answer every item to continue. For each experience you have had, please also select how long it generally lasts.
+
+  日本語（下書き）:
+
+  > 続けるには、すべての項目にお答えください。経験のある項目については、持続時間も選択してください。
+
+- [ ] **15. instructions.js → `cds.button_submit`**  
+  _New._
+
+  English:
+
+  > Continue
+
+  日本語（下書き）:
+
+  > 次へ
+
+## Texts, set-up and practice revision: Consent screen (PLACEHOLDER until the approved text arrives)
+
+- [ ] **16. instructions.js → `consent.body`**  
   _Changed paragraph on the episode questions: a few questions are about the episodes, including how they felt emotionally (そのときに感情的にどのように感じたか); some are optional (質問の一部は任意です). The sentence about 回答しない is removed. Must not mention an interview: controls see it too._
 
   English:
@@ -59,7 +240,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > **連絡先：**[研究者のメールアドレス]。参加者としての権利に関するご質問：[倫理委員会の連絡先]。[倫理審査承認番号]
 
-- [ ] **2. instructions.js → `consent.body_results_file`**  
+- [ ] **17. instructions.js → `consent.body_results_file`**  
   _Pavlovia version; the same change._
 
   English:
@@ -98,9 +279,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > **連絡先：**[研究者のメールアドレス]。参加者としての権利に関するご質問：[倫理委員会の連絡先]。[倫理審査承認番号]
 
-## Latest revision: Full screen and window check
+## Texts, set-up and practice revision: Full screen and window check
 
-- [ ] **3. instructions.js → `screen.fs_body`**  
+- [ ] **18. instructions.js → `screen.fs_body`**  
   _Changed: a neutral reason (同様の条件で表示されるよう); must NOT mention the pictures._
 
   English:
@@ -115,7 +296,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 実験が終わるまで、全画面表示のままにしてください。
 
-- [ ] **4. instructions.js → `screen.small_body`**  
+- [ ] **19. instructions.js → `screen.small_body`**  
   _Changed: a neutral reason; must NOT mention the pictures._
 
   English:
@@ -134,9 +315,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > ブラウザが拡大表示になっている場合は、表示倍率を100%に戻す（Ctrl + 0、Macでは &#8984; + 0）だけで解決する場合があります。
 
-## Latest revision: Set-up screen (new, before the brightness screen)
+## Texts, set-up and practice revision: Set-up screen (new, before the brightness screen)
 
-- [ ] **5. instructions.js → `calibration.setup_title`**  
+- [ ] **20. instructions.js → `calibration.setup_title`**  
   _New. Must not mention the pictures._
 
   English:
@@ -147,7 +328,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > はじめる前に
 
-- [ ] **6. instructions.js → `calibration.setup_body`**  
+- [ ] **21. instructions.js → `calibration.setup_body`**  
   _New. Position, distractions, laptops and desktops alike. Must not mention the pictures._
 
   English:
@@ -166,9 +347,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > ノートパソコンとデスクトップパソコンのどちらにも当てはまります。
 
-## Latest revision: Brightness screen
+## Texts, set-up and practice revision: Brightness screen
 
-- [ ] **7. instructions.js → `calibration.brightness_intro`**  
+- [ ] **22. instructions.js → `calibration.brightness_intro`**  
   _Changed: no longer mentions the pictures or their darker areas; a neutral reason instead._
 
   English:
@@ -179,7 +360,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > すべての参加者に同様の条件で表示されるよう、画面の明るさを**最大**に設定し、実験中はそのままにしてください。
 
-- [ ] **8. instructions.js → `calibration.brightness_charger`**  
+- [ ] **23. instructions.js → `calibration.brightness_charger`**  
   _New._
 
   English:
@@ -190,7 +371,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **充電器：**多くの機器はバッテリーで動作しているときに画面を暗くするため、コンピュータを充電器に接続してください。
 
-- [ ] **9. instructions.js → `calibration.brightness_auto`**  
+- [ ] **24. instructions.js → `calibration.brightness_auto`**  
   _New. True Tone and Night Shift are the names Apple uses in its Japanese settings; please check the other feature names are the ones Japanese users see (明るさの自動調節, ナイトモード, ブルーライトカット, バッテリー節約機能)._
 
   English:
@@ -201,7 +382,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **自動機能：**可能であれば、明るさの自動調節（アダプティブブライトネス、自動輝度調整などとも呼ばれます）、True Tone、Night Shift やナイトモード、ブルーライトカット、バッテリー節約機能をオフにしてください。これらがオンになっているかわからない場合は、そのままお進みいただいて構いません。
 
-- [ ] **10. instructions.js → `calibration.brightness_lighting`**  
+- [ ] **25. instructions.js → `calibration.brightness_lighting`**  
   _New._
 
   English:
@@ -212,7 +393,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **照明：**明るく安定した照明のある部屋でご参加ください。変化する日差しや、画面に直接当たる光は避けてください。画面は部屋の明るさに合わせて明るさを調節することがあります。
 
-- [ ] **11. instructions.js → `calibration.lighting_checkbox`**  
+- [ ] **26. instructions.js → `calibration.lighting_checkbox`**  
   _New. Second required checkbox, recorded as lighting_confirmed._
 
   English:
@@ -223,9 +404,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 今いる部屋は、明るく安定した照明です。
 
-## Latest revision: Screen calibration
+## Texts, set-up and practice revision: Screen calibration
 
-- [ ] **12. instructions.js → `calibration.gamma_intro`**  
+- [ ] **27. instructions.js → `calibration.gamma_intro`**  
   _Changed: the sentence about sitting back or squinting (少し離れて見たり、目を細めたり) is removed._
 
   English:
@@ -240,7 +421,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 2つのパターンが並んで表示されます。右側を調整して、2つが同じ灰色に見えるようにしてください。
 
-- [ ] **13. instructions.js → `calibration.gamma_prompt`**  
+- [ ] **28. instructions.js → `calibration.gamma_prompt`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -251,7 +432,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 2つの四角が同じ灰色に見えるまで右の四角を調整し、**「確定」**を押してください。
 
-- [ ] **14. instructions.js → `calibration.gamma_hint`**  
+- [ ] **29. instructions.js → `calibration.gamma_hint`**  
   _Changed slightly: “and” between the keys; formal._
 
   English:
@@ -262,9 +443,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > スライダーをドラッグするか、← と → のキーで調整してください。
 
-## Latest revision: Participant details
+## Texts, set-up and practice revision: Participant details
 
-- [ ] **15. instructions.js → `id.body`**  
+- [ ] **30. instructions.js → `id.body`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -275,7 +456,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 案内メールに記載された参加者IDを入力してください。メール内のリンクからこのページを開いた場合は、すでに入力されています。
 
-- [ ] **16. instructions.js → `id.id_hint`**  
+- [ ] **31. instructions.js → `id.id_hint`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -286,7 +467,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > R_ に続いて英数字15文字です。大文字と小文字は区別されます。
 
-- [ ] **17. instructions.js → `id.invalid`**  
+- [ ] **32. instructions.js → `id.invalid`**  
   _Changed: no dash; two sentences._
 
   English:
@@ -297,7 +478,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > このIDを確認できませんでした。案内メールをご確認ください。大文字と小文字は区別されます。
 
-- [ ] **18. instructions.js → `id.optional_note`**  
+- [ ] **33. instructions.js → `id.optional_note`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -308,7 +489,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **お名前**と**メールアドレス**の入力は**任意**です。入力された場合は回答データとは別に保存され、本研究に関するご連絡にのみ使用します。
 
-- [ ] **19. instructions.js → `id.optional_note_results_file`**  
+- [ ] **34. instructions.js → `id.optional_note_results_file`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -319,7 +500,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **お名前**と**メールアドレス**の入力は**任意**です。入力された場合は回答データと一緒に保存され（研究チームのみが閲覧できます）、本研究に関するご連絡にのみ使用します。
 
-- [ ] **20. instructions.js → `id.body_no_pid`**  
+- [ ] **35. instructions.js → `id.body_no_pid`**  
   _Changed: “Providing all three is preferable” (ご入力いただくことが望ましいです)._
 
   English:
@@ -338,7 +519,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > お名前とメールアドレスは回答データとは別に保存され、本研究に関するご連絡と、IDがない場合にあなたの回答を照合するためにのみ使用します。
 
-- [ ] **21. instructions.js → `id.body_no_pid_results_file`**  
+- [ ] **36. instructions.js → `id.body_no_pid_results_file`**  
   _Pavlovia version; the same change._
 
   English:
@@ -357,7 +538,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > お名前とメールアドレスは回答データと一緒に保存され、研究チームのみが閲覧できます。本研究に関するご連絡と、IDがない場合にあなたの回答を照合するためにのみ使用します。
 
-- [ ] **22. instructions.js → `id.privacy`**  
+- [ ] **37. instructions.js → `id.privacy`**  
   _New. Shown on the ID screen in every variant._
 
   English:
@@ -368,7 +549,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > あなたの個人情報が研究チーム以外の人に共有されることはありません。
 
-- [ ] **23. instructions.js → `id.retry_hint`**  
+- [ ] **38. instructions.js → `id.retry_hint`**  
   _Changed: “enter it again” (もう一度入力できます)._
 
   English:
@@ -379,9 +560,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **スペースキー**を押すと、もう一度入力できます。
 
-## Latest revision: Episode selection
+## Texts, set-up and practice revision: Episode selection
 
-- [ ] **24. instructions.js → `episodes.screens.participant.derealization.body`**  
+- [ ] **39. instructions.js → `episodes.screens.participant.derealization.body`**  
   _Formal register (お書きください). Participants only._
 
   English:
@@ -396,7 +577,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > あとで見てそれとわかるように、下の欄にいくつかの言葉でお書きください（どこにいたか、何をしていたか、など）。その後の質問は、そのエピソードを思い出しやすくするためのものです。
 
-- [ ] **25. instructions.js → `episodes.screens.participant.ordinary.body`**  
+- [ ] **40. instructions.js → `episodes.screens.participant.ordinary.body`**  
   _Formal register; no dashes in the English. Participants only._
 
   English:
@@ -411,7 +592,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > あとで見てそれとわかるように、下の欄にいくつかの言葉でお書きください。その後の質問は、そのエピソードを思い出しやすくするためのものです。
 
-- [ ] **26. instructions.js → `episodes.screens.control.ordinary.body`**  
+- [ ] **41. instructions.js → `episodes.screens.control.ordinary.body`**  
   _Formal register. Controls: must NOT mention an interview._
 
   English:
@@ -426,7 +607,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > あとで見てそれとわかるように、下の欄にいくつかの言葉でお書きください（どこにいたか、何をしていたか、など）。その後の質問は、そのエピソードを思い出しやすくするためのものです。
 
-- [ ] **27. instructions.js → `episodes.questions_intro`**  
+- [ ] **42. instructions.js → `episodes.questions_intro`**  
   _Changed: some questions are optional and may be left blank._
 
   English:
@@ -437,7 +618,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 以下は、エピソードを思い出しやすくするための質問です。「任意」と記された質問は、空欄のままでも構いません。
 
-- [ ] **28. instructions.js → `episodes.optional_tag`**  
+- [ ] **43. instructions.js → `episodes.optional_tag`**  
   _New. Shown after the label of when / how long / where._
 
   English:
@@ -448,7 +629,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > （任意）
 
-- [ ] **29. instructions.js → `episodes.incomplete`**  
+- [ ] **44. instructions.js → `episodes.incomplete`**  
   _Changed: the words, the tone and the intensity are required._
 
   English:
@@ -459,9 +640,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 続けるには、エピソードを表す言葉を書き、そのときの気分と感情の強さについての2つの質問にお答えください。
 
-## Latest revision: Reinstatement
+## Texts, set-up and practice revision: Reinstatement
 
-- [ ] **30. instructions.js → `reinstate.body.derealization`**  
+- [ ] **45. instructions.js → `reinstate.body.derealization`**  
   _Formal register (できるだけ詳しく). Participants only._
 
   English:
@@ -480,7 +661,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > どこにいたか、周りに何があったか、何をしていたかなど、できるだけ詳しく思い出してください。
 
-- [ ] **31. instructions.js → `reinstate.body.ordinary`**  
+- [ ] **46. instructions.js → `reinstate.body.ordinary`**  
   _Formal register. Must NOT mention an interview._
 
   English:
@@ -499,9 +680,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > どこにいたか、周りに何があったか、何をしていたかなど、できるだけ詳しく思い出してください。
 
-## Latest revision: Practice
+## Texts, set-up and practice revision: Practice
 
-- [ ] **32. instructions.js → `practice.body.derealization`**  
+- [ ] **47. instructions.js → `practice.body.derealization`**  
   _LOAD-BEARING. New, before part 1 when it is the derealization episode. Bold: 同じ場所, あなたのエピソードが起きた場所ではありません, その場所の見え方だけであり、写っているものは同じです._
 
   English:
@@ -524,7 +705,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 正解・不正解はありません。最初の印象に従ってお答えください。
 
-- [ ] **33. instructions.js → `practice.body.ordinary`**  
+- [ ] **48. instructions.js → `practice.body.ordinary`**  
   _LOAD-BEARING. New, before part 1 when it is the ordinary episode. Must NOT mention an interview._
 
   English:
@@ -547,7 +728,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 正解・不正解はありません。最初の印象に従ってお答えください。
 
-- [ ] **34. instructions.js → `practice.body.expectation`**  
+- [ ] **49. instructions.js → `practice.body.expectation`**  
   _LOAD-BEARING. New, before part 1 when it is the expectation. Must NOT mention an interview._
 
   English:
@@ -566,7 +747,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 正解・不正解はありません。最初の印象に従ってお答えください。
 
-- [ ] **35. instructions.js → `practice.keys_line`**  
+- [ ] **50. instructions.js → `practice.keys_line`**  
   _New (was the end of practice.body)._
 
   English:
@@ -577,7 +758,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **←** と **→** の矢印キーで、左または右の画像を選んでください。
 
-- [ ] **36. instructions.js → `practice.count_line`**  
+- [ ] **51. instructions.js → `practice.count_line`**  
   _New (was the end of practice.body). {N} = 3._
 
   English:
@@ -588,7 +769,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > まず{N}回の練習から始めます。
 
-- [ ] **37. instructions.js → `practice.intro_b2`**  
+- [ ] **52. instructions.js → `practice.intro_b2`**  
   _New (was practice.body_b2, without the count)._
 
   English:
@@ -599,7 +780,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 2つ目のパートも、1つ目と同じ方法で進みます。
 
-- [ ] **38. instructions.js → `practice.body_b2.derealization`**  
+- [ ] **53. instructions.js → `practice.body_b2.derealization`**  
   _LOAD-BEARING. New, before part 2, after the new question. Participants only._
 
   English:
@@ -610,7 +791,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 前のパートと同様に、画像に写っているのはあなたのエピソードが起きた場所ではなく、2枚が異なるのはその場所の見え方だけです。面接でお話しいただいたエピソードを思い浮かべ、そのときの周囲の風景の見え方により近いほうの画像を選んでください。
 
-- [ ] **39. instructions.js → `practice.body_b2.ordinary`**  
+- [ ] **54. instructions.js → `practice.body_b2.ordinary`**  
   _LOAD-BEARING. New, before part 2. Must NOT mention an interview._
 
   English:
@@ -621,7 +802,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 前のパートと同様に、画像に写っているのはあなたのエピソードが起きた場所ではなく、2枚が異なるのはその場所の見え方だけです。あなたが書いた、いつもどおりだったエピソードを思い浮かべ、そのときの周囲の風景の見え方により近いほうの画像を選んでください。
 
-- [ ] **40. instructions.js → `practice.body_b2.expectation`**  
+- [ ] **55. instructions.js → `practice.body_b2.expectation`**  
   _LOAD-BEARING. New, before part 2. Must NOT mention an interview._
 
   English:
@@ -632,7 +813,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 前のパートと同様に、2枚の画像が異なるのはその場所の見え方だけです。現実感喪失を体験している人の周囲の風景を想像し、その人にとっての見え方により近いと思うほうの画像を選んでください。
 
-- [ ] **41. instructions.js → `practice.continue_hint`**  
+- [ ] **56. instructions.js → `practice.continue_hint`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -643,7 +824,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **スペースキー**を押すと練習が始まります。
 
-- [ ] **42. instructions.js → `practice.first_feedback.derealization`**  
+- [ ] **57. instructions.js → `practice.first_feedback.derealization`**  
   _LOAD-BEARING. New. Replaces the question for 3 s after the first practice trial, with only the chosen picture. Must confirm the participant’s own choice and never read as a correct answer._
 
   English:
@@ -654,7 +835,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > これが、そのエピソード中の周囲の風景の見え方により近いとして、あなたが選んだ画像です。
 
-- [ ] **43. instructions.js → `practice.first_feedback.ordinary`**  
+- [ ] **58. instructions.js → `practice.first_feedback.ordinary`**  
   _LOAD-BEARING. New; as above._
 
   English:
@@ -665,7 +846,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > これが、いつもどおりだったエピソード中の周囲の風景の見え方により近いとして、あなたが選んだ画像です。
 
-- [ ] **44. instructions.js → `practice.first_feedback.expectation`**  
+- [ ] **59. instructions.js → `practice.first_feedback.expectation`**  
   _LOAD-BEARING. New; as above._
 
   English:
@@ -676,7 +857,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > これが、現実感喪失を体験している人にとっての周囲の風景の見え方により近いと思うとして、あなたが選んだ画像です。
 
-- [ ] **45. instructions.js → `practice.end_body`**  
+- [ ] **60. instructions.js → `practice.end_body`**  
   _Changed: no number of trials and no duration._
 
   English:
@@ -695,7 +876,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > **ときどき、画像のない画面が表示され**、特定の矢印キーを押すよう指示されます。これは画面を読んでいるかを確認するためのものです。制限時間はありませんので、落ち着いてお読みください。押せるのは一度だけです。
 
-- [ ] **46. instructions.js → `practice.end_body_b2`**  
+- [ ] **61. instructions.js → `practice.end_body_b2`**  
   _Changed: no number of trials._
 
   English:
@@ -710,7 +891,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 1つ目のパートと同様に、途中に短い休憩があり、ときどき画像のない画面が表示されて、特定の矢印キーを押すよう指示されます。
 
-- [ ] **47. instructions.js → `practice.end_hint`**  
+- [ ] **62. instructions.js → `practice.end_hint`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -721,9 +902,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > **スペースキー**を押すと本番が始まります。
 
-## Latest revision: Attention check
+## Texts, set-up and practice revision: Attention check
 
-- [ ] **48. instructions.js → `catch.instruction`**  
+- [ ] **63. instructions.js → `catch.instruction`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches. Must stay unmistakable._
 
   English:
@@ -734,9 +915,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > {KEYNAME}の矢印キーを押してください
 
-## Latest revision: Breaks and rest
+## Texts, set-up and practice revision: Breaks and rest
 
-- [ ] **49. instructions.js → `brk.body`**  
+- [ ] **64. instructions.js → `brk.body`**  
   _Changed: rest your eyes, but avoid the phone or other devices. The progress line is unchanged._
 
   English:
@@ -751,7 +932,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 少し目を休めていただいて構いませんが、スマートフォンやその他の機器の使用はお控えください。全画面表示のままにしてください。
 
-- [ ] **50. instructions.js → `brk.hint`**  
+- [ ] **65. instructions.js → `brk.hint`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -762,7 +943,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 準備ができたら**スペースキー**を押してください。
 
-- [ ] **51. instructions.js → `rest.body`**  
+- [ ] **66. instructions.js → `rest.body`**  
   _Changed: rest your eyes, but avoid the phone or other devices (was: you may look away from the screen)._
 
   English:
@@ -773,7 +954,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 次のパートの前に、1分間休憩してください。目を休めていただいて構いませんが、スマートフォンやその他の機器の使用はお控えください。全画面表示のままにしてください。
 
-- [ ] **52. instructions.js → `rest.done`**  
+- [ ] **67. instructions.js → `rest.done`**  
   _Formal register._
 
   English:
@@ -784,9 +965,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 準備ができましたら、次へお進みください。
 
-## Latest revision: Word ratings
+## Texts, set-up and practice revision: Word ratings
 
-- [ ] **53. words.js → `instruction.participant`**  
+- [ ] **68. words.js → `instruction.participant`**  
   _Changed: formal register; no dash in the English._
 
   English:
@@ -809,7 +990,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > すべての言葉について、0（まったく当てはまらない）から6（非常によく当てはまる）で評価してください。まったく当てはまらない言葉もありますが、その場合も、すべての言葉についてご回答ください。
 
-- [ ] **54. words.js → `instruction.control`**  
+- [ ] **69. words.js → `instruction.control`**  
   _Changed: formal register. Must NOT mention an interview._
 
   English:
@@ -828,9 +1009,9 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > すべての言葉について、0（まったく当てはまらない）から6（非常によく当てはまる）で評価してください。まったく当てはまらない言葉もありますが、その場合も、すべての言葉についてご回答ください。
 
-## Latest revision: End, loading and error screens
+## Texts, set-up and practice revision: End, loading and error screens
 
-- [ ] **55. instructions.js → `end.fail_done`**  
+- [ ] **70. instructions.js → `end.fail_done`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches. (No dash.)_
 
   English:
@@ -841,7 +1022,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > ダウンロードが完了しました。メールでお送りいただいた後、このページを閉じていただいて構いません。
 
-- [ ] **56. instructions.js → `preload.message`**  
+- [ ] **71. instructions.js → `preload.message`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -856,7 +1037,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > このページを閉じないでください。
 
-- [ ] **57. instructions.js → `error.title`**  
+- [ ] **72. instructions.js → `error.title`**  
   _English changed for the formal register only; the Japanese is unchanged. Please check it still matches._
 
   English:
@@ -869,7 +1050,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## v5b: Episode selection (after calibration, before part 1)
 
-- [ ] **58. instructions.js → `episodes.screens.participant.derealization.title`**  
+- [ ] **73. instructions.js → `episodes.screens.participant.derealization.title`**  
   _Participants only. May mention the interview (面接)._
 
   English:
@@ -880,7 +1061,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 面接でお話しいただいたエピソード
 
-- [ ] **59. instructions.js → `episodes.screens.participant.ordinary.title`**
+- [ ] **74. instructions.js → `episodes.screens.participant.ordinary.title`**
 
   English:
 
@@ -890,7 +1071,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > いつもどおりだったエピソード
 
-- [ ] **60. instructions.js → `episodes.screens.control.ordinary.title`**
+- [ ] **75. instructions.js → `episodes.screens.control.ordinary.title`**
 
   English:
 
@@ -900,7 +1081,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > いつもどおりだったエピソード
 
-- [ ] **61. instructions.js → `episodes.screens.control.expectation.title`**
+- [ ] **76. instructions.js → `episodes.screens.control.expectation.title`**
 
   English:
 
@@ -910,7 +1091,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 現実感喪失
 
-- [ ] **62. instructions.js → `episodes.screens.control.expectation.body`**  
+- [ ] **77. instructions.js → `episodes.screens.control.expectation.body`**  
   _LOAD-BEARING. The v4 control anchoring text, last sentence reworded to match the new expectation question. 現実感喪失 should match the Japanese CDS-29. Must not mention an interview._
 
   English:
@@ -925,7 +1106,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > この研究の一部では、現実感喪失を体験している人には周囲の風景がどのように見えていると思うかを想像してお答えください。
 
-- [ ] **63. instructions.js → `episodes.words.label`**  
+- [ ] **78. instructions.js → `episodes.words.label`**  
   _Required free-text field._
 
   English:
@@ -936,7 +1117,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > このエピソードを表すいくつかの言葉
 
-- [ ] **64. instructions.js → `episodes.words.hint`**  
+- [ ] **79. instructions.js → `episodes.words.hint`**  
   _Example beside the field. Keep it free of visual words and of anything identifying._
 
   English:
@@ -947,7 +1128,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 例：仕事帰りに歩いていたとき
 
-- [ ] **65. instructions.js → `episodes.questions.when.label`**  
+- [ ] **80. instructions.js → `episodes.questions.when.label`**  
   _Unchanged from v4 (was anchoring.questions.when)._
 
   English:
@@ -958,7 +1139,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > それはいつでしたか？
 
-- [ ] **66. instructions.js → `episodes.questions.when.hint`**  
+- [ ] **81. instructions.js → `episodes.questions.when.hint`**  
   _Unchanged from v4._
 
   English:
@@ -969,7 +1150,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 例：先週、2か月ほど前
 
-- [ ] **67. instructions.js → `episodes.questions.duration.label`**  
+- [ ] **82. instructions.js → `episodes.questions.duration.label`**  
   _Unchanged from v4._
 
   English:
@@ -980,7 +1161,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > どのくらい続きましたか？
 
-- [ ] **68. instructions.js → `episodes.questions.duration.hint`**  
+- [ ] **83. instructions.js → `episodes.questions.duration.hint`**  
   _Unchanged from v4._
 
   English:
@@ -991,7 +1172,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 例：数秒、1時間ほど
 
-- [ ] **69. instructions.js → `episodes.questions.where.label`**  
+- [ ] **84. instructions.js → `episodes.questions.where.label`**  
   _Unchanged from v4._
 
   English:
@@ -1002,7 +1183,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > どこにいましたか？
 
-- [ ] **70. instructions.js → `episodes.questions.where.hint`**  
+- [ ] **85. instructions.js → `episodes.questions.where.hint`**  
   _Unchanged from v4._
 
   English:
@@ -1013,7 +1194,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 例：自宅、電車の中、お店
 
-- [ ] **71. instructions.js → `episodes.questions.tone.label`**  
+- [ ] **86. instructions.js → `episodes.questions.tone.label`**  
   _New. Scale −3 … +3._
 
   English:
@@ -1024,7 +1205,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > そのときの気分は、どのようなものでしたか？
 
-- [ ] **72. instructions.js → `episodes.questions.tone.anchor_low`**
+- [ ] **87. instructions.js → `episodes.questions.tone.anchor_low`**
 
   English:
 
@@ -1034,7 +1215,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > とても不快
 
-- [ ] **73. instructions.js → `episodes.questions.tone.anchor_high`**
+- [ ] **88. instructions.js → `episodes.questions.tone.anchor_high`**
 
   English:
 
@@ -1044,7 +1225,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > とても心地よい
 
-- [ ] **74. instructions.js → `episodes.questions.intensity.label`**  
+- [ ] **89. instructions.js → `episodes.questions.intensity.label`**  
   _New. Scale 0 … 6._
 
   English:
@@ -1055,7 +1236,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > そのときの感情は、どのくらい強いものでしたか？
 
-- [ ] **75. instructions.js → `episodes.questions.intensity.anchor_low`**
+- [ ] **90. instructions.js → `episodes.questions.intensity.anchor_low`**
 
   English:
 
@@ -1065,7 +1246,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > まったく強くない
 
-- [ ] **76. instructions.js → `episodes.questions.intensity.anchor_high`**
+- [ ] **91. instructions.js → `episodes.questions.intensity.anchor_high`**
 
   English:
 
@@ -1075,7 +1256,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 非常に強い
 
-- [ ] **77. instructions.js → `episodes.button`**  
+- [ ] **92. instructions.js → `episodes.button`**  
   _Unchanged from v4._
 
   English:
@@ -1088,7 +1269,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## v5b: Reinstatement, the first screen of each part
 
-- [ ] **78. instructions.js → `reinstate.title`**  
+- [ ] **93. instructions.js → `reinstate.title`**  
   _{N} = 1 or 2, {TOTAL} = 2._
 
   English:
@@ -1099,7 +1280,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 第{N}部（全{TOTAL}部）
 
-- [ ] **79. instructions.js → `reinstate.body.expectation`**  
+- [ ] **94. instructions.js → `reinstate.body.expectation`**  
   _LOAD-BEARING. Controls only: must NOT mention an interview._
 
   English:
@@ -1114,7 +1295,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
   > 
   > 現実感喪失とは、周囲が奇妙に、あるいはよそよそしく感じられ、まるで自分が世界から切り離されているかのように感じられる体験です。
 
-- [ ] **80. instructions.js → `reinstate.button`**
+- [ ] **95. instructions.js → `reinstate.button`**
 
   English:
 
@@ -1126,7 +1307,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## v5b: Trial prompt (shown on every image trial, by episode)
 
-- [ ] **81. instructions.js → `prompt.main.derealization`**  
+- [ ] **96. instructions.js → `prompt.main.derealization`**  
   _LOAD-BEARING. Unchanged wording (was prompt.main.participant)._
 
   English:
@@ -1137,7 +1318,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > そのエピソード中の周囲の風景の見え方に、より近いのはどちらですか？
 
-- [ ] **82. instructions.js → `prompt.main.ordinary`**  
+- [ ] **97. instructions.js → `prompt.main.ordinary`**  
   _LOAD-BEARING. New. Must fit above the pictures._
 
   English:
@@ -1148,7 +1329,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > あなたが書いた、いつもどおりだったエピソード中の周囲の風景の見え方に、より近いのはどちらですか？
 
-- [ ] **83. instructions.js → `prompt.main.expectation`**  
+- [ ] **98. instructions.js → `prompt.main.expectation`**  
   _LOAD-BEARING. English changed from “might look” to “you think … look”; the Japanese already said 思う and is unchanged, please check it still matches._
 
   English:
@@ -1161,7 +1342,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## v5b: Practice
 
-- [ ] **84. instructions.js → `practice.question_changed`**  
+- [ ] **99. instructions.js → `practice.question_changed`**  
   _New. {QUESTION} = the new question._
 
   English:
@@ -1178,7 +1359,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## v5b: Breaks and rest
 
-- [ ] **85. instructions.js → `rest.title`**  
+- [ ] **100. instructions.js → `rest.title`**  
   _New._
 
   English:
@@ -1189,7 +1370,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 休憩
 
-- [ ] **86. instructions.js → `rest.wait`**
+- [ ] **101. instructions.js → `rest.wait`**
 
   English:
 
@@ -1199,7 +1380,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 1分たつと「次へ」ボタンが表示されます。
 
-- [ ] **87. instructions.js → `rest.button`**
+- [ ] **102. instructions.js → `rest.button`**
 
   English:
 
@@ -1211,7 +1392,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## v5b: Word ratings
 
-- [ ] **88. words.js → `title`**  
+- [ ] **103. words.js → `title`**  
   _Unchanged._
 
   English:
@@ -1222,7 +1403,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 言葉の評価
 
-- [ ] **89. words.js → `question_short.participant`**  
+- [ ] **104. words.js → `question_short.participant`**  
   _Changed: as instruction.participant._
 
   English:
@@ -1233,7 +1414,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 面接でお話しいただいたエピソード（「{WORDS}」）の間、それぞれの言葉は、あなたの周囲の風景の見え方をどの程度よく表していますか。
 
-- [ ] **90. words.js → `question_short.control`**  
+- [ ] **105. words.js → `question_short.control`**  
   _Unchanged._
 
   English:
@@ -1246,7 +1427,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## Consent screen: PLACEHOLDER (to be replaced by the approved text)
 
-- [ ] **91. instructions.js → `consent.title`**
+- [ ] **106. instructions.js → `consent.title`**
 
   English:
 
@@ -1256,7 +1437,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 研究参加への同意
 
-- [ ] **92. instructions.js → `consent.checkbox`**
+- [ ] **107. instructions.js → `consent.checkbox`**
 
   English:
 
@@ -1266,7 +1447,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 上記の説明を読みました。18歳以上であり、本研究への参加に同意します。
 
-- [ ] **93. instructions.js → `consent.button_agree`**
+- [ ] **108. instructions.js → `consent.button_agree`**
 
   English:
 
@@ -1276,7 +1457,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 同意して次へ
 
-- [ ] **94. instructions.js → `consent.button_decline`**
+- [ ] **109. instructions.js → `consent.button_decline`**
 
   English:
 
@@ -1286,7 +1467,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > 同意しない
 
-- [ ] **95. instructions.js → `consent.declined_title`**
+- [ ] **110. instructions.js → `consent.declined_title`**
 
   English:
 
@@ -1296,7 +1477,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > ありがとうございました
 
-- [ ] **96. instructions.js → `consent.declined_body`**
+- [ ] **111. instructions.js → `consent.declined_body`**
 
   English:
 
@@ -1312,7 +1493,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## ID screen: link without a participant ID (ID, or name and email)
 
-- [ ] **97. instructions.js → `id.name_label_plain`**
+- [ ] **112. instructions.js → `id.name_label_plain`**
 
   English:
 
@@ -1322,7 +1503,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > お名前
 
-- [ ] **98. instructions.js → `id.email_label_plain`**
+- [ ] **113. instructions.js → `id.email_label_plain`**
 
   English:
 
@@ -1332,7 +1513,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > メールアドレス
 
-- [ ] **99. instructions.js → `id.need_id_or_contact`**  
+- [ ] **114. instructions.js → `id.need_id_or_contact`**  
   _Shown by the browser in a small bubble next to the ID field._
 
   English:
@@ -1345,7 +1526,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## Incomplete link (no group, or no valid slot, in the link)
 
-- [ ] **100. instructions.js → `link.missing_title`**
+- [ ] **115. instructions.js → `link.missing_title`**
 
   English:
 
@@ -1355,7 +1536,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > リンクが不完全です
 
-- [ ] **101. instructions.js → `link.missing_body`**
+- [ ] **116. instructions.js → `link.missing_body`**
 
   English:
 
@@ -1367,7 +1548,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
 ## Full screen and window check (hard stop)
 
-- [ ] **102. instructions.js → `screen.small_title`**
+- [ ] **117. instructions.js → `screen.small_title`**
 
   English:
 
@@ -1377,7 +1558,7 @@ The strings changed in the latest text revision (formal register, no dashes, the
 
   > このウィンドウはこの実験には小さすぎます
 
-- [ ] **103. instructions.js → `screen.small_size`**  
+- [ ] **118. instructions.js → `screen.small_size`**  
   _Unchanged; listed for context._
 
   English:
@@ -1387,58 +1568,3 @@ The strings changed in the latest text revision (formal register, no dashes, the
   日本語（下書き）:
 
   > 現在の表示領域は {W} × {H} ピクセルです。{MW} × {MH} ピクセル以上を推奨します。
-
-## State items (optional block at the end)
-
-- [ ] **104. instructions.js → `state.lead_in`**  
-  _Drafted. If the published Japanese version of the questionnaire has its own lead-in for the state form, use that instead._
-
-  English:
-
-  > Right now, at this moment:
-
-  日本語（下書き）:
-
-  > 今、この瞬間：
-
-- [ ] **105. instructions.js → `state.anchor_low`**  
-  _Same Japanese as the word-rating anchor, as requested (the English differs: “not at all”)._
-
-  English:
-
-  > not at all
-
-  日本語（下書き）:
-
-  > まったく当てはまらない
-
-- [ ] **106. instructions.js → `state.anchor_high`**  
-  _Same Japanese as the word-rating anchor, as requested (the English differs: “completely” vs the word ratings’ “exactly”)._
-
-  English:
-
-  > completely
-
-  日本語（下書き）:
-
-  > 非常によく当てはまる
-
-- [ ] **107. instructions.js → `state.progress`**
-
-  English:
-
-  > {DONE} of {TOTAL} answered
-
-  日本語（下書き）:
-
-  > {TOTAL} 項目中 {DONE} 項目に回答済み
-
-- [ ] **108. instructions.js → `state.button_submit`**
-
-  English:
-
-  > Continue
-
-  日本語（下書き）:
-
-  > 次へ

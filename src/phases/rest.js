@@ -27,6 +27,7 @@ var RestPhase = (function () {
 
   function buildNodes(jsPsych) {
     var result = null;
+    var resumedLeft = null;
 
     return [{
       type: jsPsychCallFunction,
@@ -36,7 +37,17 @@ var RestPhase = (function () {
         var total = CONFIG.timing.rest_ms;
         var start = new Date();
         var shownAt = null;
-        Record.markRest(jsPsych, 'start', start);
+        // Resumed at the rest: only the time that remained, and rest_start
+        // keeps its first value.
+        var already = Progress.takeRestElapsed();
+        var restStart = start;
+        if (already !== null) {
+          resumedLeft = Math.max(0, total - already.elapsed);
+          total = resumedLeft;
+          if (already.start) restStart = new Date(already.start);
+        }
+        Record.markRest(jsPsych, 'start', restStart);
+        var lastBeat = 0;
 
         var display = jsPsych.getDisplayElement();
         display.innerHTML =
@@ -52,8 +63,15 @@ var RestPhase = (function () {
         var btn   = document.getElementById('rest-continue');
 
         var timer = setInterval(function () {
-          var left = total - (Date.now() - start.getTime());
+          var spent = Date.now() - start.getTime();
+          var left = total - spent;
           clock.textContent = _mmss(left);
+          // The rest's elapsed time, saved every second for a resume.
+          if (spent - lastBeat >= 1000 && left > 0) {
+            lastBeat = spent;
+            Progress.restHeartbeat((CONFIG.timing.rest_ms - total) + spent,
+                                   restStart.toISOString());
+          }
           if (left <= 0) {
             clearInterval(timer);
             shownAt = new Date();
@@ -68,7 +86,9 @@ var RestPhase = (function () {
           var end = new Date();
           Record.markRest(jsPsych, 'end', end);
           result = {
-            rest_ms:       total,
+            rest_ms:       CONFIG.timing.rest_ms,
+            // On a resumed rest: the time that remained when it resumed.
+            rest_resumed_left_ms: resumedLeft,
             rest_extra_ms: shownAt ? end.getTime() - shownAt.getTime() : null,
           };
           if (CONFIG.debug) console.log('[Rest] done', result);

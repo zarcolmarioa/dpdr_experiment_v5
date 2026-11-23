@@ -57,8 +57,13 @@ step has its own switch in `config.js`.
 | 8 | Rest — 1 minute, countdown; Continue appears at zero | `blocks.rest`, `timing.rest_ms` |
 | 9 | **Block 2** — as block 1, with the second episode; its practice intro says the question has changed, shows it and restates the task for that episode | as block 1 |
 | 10 | Word ratings — 10 words, 0–6 (participants: the derealization episode; controls: their expectation) | `blocks.words` |
-| 11 | State items — 4 items, 0–6 | `blocks.state` |
-| 12 | Save (DataPipe / Pavlovia / download), completion screen | `platform` (`'auto'`: from the address) |
+| 11 | CDS items 2, 13, 19 and 29 (trait format, verbatim): the frequency (0 to 4), then, when it is not 0, the duration (1 to 6) | `blocks.cds` |
+| 12 | Save (DataPipe / Pavlovia / download), completion screen (no contact sentence; the upload-failure screen keeps the contact address) | `platform` (`'auto'`: from the address) |
+
+The set-up screen and the instructions before block 1's practice ask
+participants not to reload or close the page until the final screen; from
+the consent screen to the final screen the browser's own "Leave this
+page?" dialog guards against it (see **Interruptions** below).
 
 The images (617 of them, ≈ 223 MB, both blocks, block 1's first) start downloading in
 the background right after the ID screen, so they are usually cached by
@@ -76,6 +81,67 @@ position, not the episode. A package without these keys does not start.
 block position, restarting in each block. Failures are recorded per block;
 the exclusion rule (3 or more over the session) is applied in the
 analysis.
+
+---
+
+## Interruptions: resuming, and the completion check
+
+`src/progress.js`. Everything here works **in the same browser only**: the
+progress is kept in that browser's storage (localStorage), and nothing is
+sent anywhere until the usual upload at the end.
+
+**Resuming after a reload or a closed tab.** After every screen and trial
+the page stores its progress and every response. Opening the same link
+again (same participant ID, group, slot, package and experiment version)
+shows a screen saying the study was interrupted, with only **Continue**.
+Continuing needs full screen again (and passes the window check again) and
+waits for the images, as at the start. Where it continues:
+
+| interrupted during | continues with |
+|---|---|
+| consent, participant details, full screen, set-up, brightness or screen calibration | that part again from its first screen |
+| the episode questions | the episode questions from the first episode screen |
+| a block's practice | the reinstatement screen, the practice instructions, then the practice from its first trial |
+| the end-of-practice screen | the reinstatement screen, then that screen |
+| the main trials | the reinstatement screen, then the exact trial where the person stopped |
+| a break | that break screen |
+| the rest | the rest screen, with the time that remained |
+| the word ratings or the CDS items | that part again from its first screen (the words keep their order) |
+| the saving step | the saving step, under a distinct file name (`…_resumed<n>.csv`, recorded as `data_filename`) |
+
+The assignment, lists, order, catch targets and breaks continue exactly as
+before. Trials and screens completed before the interruption are kept and
+appear **once** in the final file; answers from a screen that is started
+again are dropped, and the restart is recorded. The name and email upload
+is **not repeated** if it had succeeded before the interruption
+(`contact_saved_before_resume` on the `resume` row). No time limit is
+enforced: every interruption is recorded (`resume` rows, `segment`,
+`resume_count`, `DATA_DICTIONARY.md` §16) and the analysis decides. A link
+opened with other values starts normally.
+
+If the browser has no usable storage (blocked by its settings, or a write
+fails), the study runs normally without resuming and records
+`resume_available = false`. A private window does have storage until it is
+closed, so a reload in a private window resumes, but closing the window
+loses the progress.
+
+**Completion check.** When the final screen appears (saved, or the
+upload-failure screen with its download button), the stored progress is
+deleted and the browser records that this participant ID has completed the
+study (for this experiment name). Opening the link again in that browser
+shows only: *"You have already completed this study. Thank you for your
+participation."* A typed ID is checked straight after the ID screen,
+before anything is uploaded. **Sessions without a participant ID (name and
+email only) cannot be recognised**, and neither can a participant who opens
+the link in another browser or on another device. The check also applies
+to the test IDs; clear it from `dev.html` (below).
+
+**"Leave this page?"** From the consent screen until the final screen,
+reloading or closing the tab triggers the browser's own dialog (its wording
+is the browser's). Browsers show it only after the person has clicked or
+typed on the page, so not on the consent screen before the first click. It
+is switched off on the final screen, and on the screens that end a session
+early (consent declined, window too small).
 
 ---
 
@@ -155,10 +221,11 @@ src/
   loader.js             the package and the link parameters (group, slot, idate, lang, set)
   validate.js           preflight checks against design.json (also run by tools/check_package.js)
   record.js             session-level stamps and trial rows
+  progress.js           progress in the browser: resuming, completion check, reload dialog
   participant-id.js     ?pid= with typed fallback; contact upload or results-file columns
   calibration/          screen-check (full screen + window stop), brightness, gamma
   phases/               consent, episodes (selection + reinstatement), pairs (one
-                        block), rest, words, state, rating-grid (shared 0–6 grid)
+                        block), rest, words, cds, rating-grid (0–6 grid for the words)
   dev-menu.js           the dev.html block jumper
 ```
 
@@ -263,7 +330,7 @@ custom session:
   episodes + block 1;
 - **jump to block 2**, **jump to the rest**, **jump to the word ratings**
   (a marked dev value stands in for the participant's words);
-- the first catch trial of block 1; state items; upload test (3 trials per
+- the first catch trial of block 1; CDS items; upload test (3 trials per
   block);
 - custom: any block switch, either block position, main and practice
   trials per block.
@@ -285,6 +352,15 @@ pattern. The label is drawn after each screen appears, so it is not recorded in 
 column (including `stimulus`). It never appears on `index.html`, and
 `index.html` refuses to start if `CONFIG.dev.trial_label` is true.
 `node tools/test_trial_label.js` checks all of this in a browser.
+
+**Stored in this browser.** The menu lists what this browser holds for the
+study: an unfinished dev session for the current link can be **resumed**
+(with the dev settings it was started with), and one button **clears all
+stored progress and completion records**. dev.html and index.html share the
+browser's storage (same address), so this also clears what index.html runs
+left, for example the completion record of a test ID. A preset starts a
+new session for the link, replacing its stored progress. dev.html never
+applies the completion check.
 
 Every dev session is stamped `is_dev = true`; shortened ones also
 `shortened = true`, `shortened_to = N`. Shortening exists only here: the
@@ -330,7 +406,7 @@ single invitation while any item fails**.
 - [ ] `blocks.consent: true`. (`index.html` refuses to start with it off, but
       check anyway.)
 - [ ] Every block switched on: `consent`, `episodes`, `practice`, `main`,
-      `rest`, `words`, `state`; `blocks.positions: [1, 2]`;
+      `rest`, `words`, `cds`; `blocks.positions: [1, 2]`;
       `size_check: false`; `limits.max_trials` and `limits.max_practice`
       both 0, and `dev.trial_label: false` (`index.html` refuses to start
       otherwise);
@@ -351,8 +427,6 @@ single invitation while any item fails**.
       while any gap remains anywhere in the text. On **Pavlovia** the text
       shown is `consent.body_results_file` (name and email stored with the
       responses): that is the one to replace there.
-- [ ] The exact published wording of the **four state items** pasted into
-      `state.items` in both languages.
 - [ ] The **Japanese strings checked by a native speaker**: every box in
       `text/ja/STRINGS_TO_CHECK.md` ticked, corrections made in
       `text/ja/*.js`.
@@ -381,7 +455,7 @@ single invitation while any item fails**.
       (`group=participant` and `group=control`, a test ID, any slot), and
       each CSV checked against `DATA_DICTIONARY.md` §13: 406 `pairs` rows
       (203 per block), 360 analysed main rows, 4 breaks and 3 practice
-      feedback screens per block, the `rest`, `word_ratings` and `state`
+      feedback screens per block, the `rest`, `word_ratings` and `cds`
       rows, and `group`, `slot`, `assignment_row`, `b1_*`/`b2_*`,
       `ep_*_words`, `catch_fail_*`, `consent_given`, `interview_date`,
       `rating_foggy`, `rating_faded` on every row.

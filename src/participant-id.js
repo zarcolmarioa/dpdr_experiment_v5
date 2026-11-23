@@ -59,7 +59,21 @@ var ParticipantID = (function () {
   var _contactReply = '';     // DataPipe's raw reply, shown in debug mode
   var _contactStatus = null;  // 'saved' / 'queued' / 'failed', for debug
 
+  var _alreadyCompleted = false;   // this ID has completed the study (index.html)
+
   function get()          { return _id; }
+  function alreadyCompleted() { return _alreadyCompleted; }
+
+  // For resuming (progress.js).
+  function state() {
+    return { id: _id, superuser: _superuser, contactSaved: _contactSaved,
+             contactStatus: _contactStatus };
+  }
+  function restore(s) {
+    _id = s.id; _superuser = !!s.superuser;
+    _contactSaved = s.contactSaved; _contactStatus = s.contactStatus;
+    if (Progress.contactSavedBefore()) { _contactSaved = true; _contactStatus = _contactStatus || 'saved'; }
+  }
   function isSuperuser()  { return _superuser; }
   function contactSaved() { return _contactSaved; }
   function contactReply() { return _contactReply; }
@@ -232,6 +246,9 @@ var ParticipantID = (function () {
         _contactStatus = pipeStatus(result);
         _contactSaved  = (_contactStatus !== 'failed');
         _contactReply  = _describe(result);
+        // Remembered in the stored progress, so a resumed session never
+        // uploads the contact file a second time.
+        if (typeof Progress !== 'undefined') Progress.noteContact(_contactSaved, filename);
         console.log('[Contact] upload ' + _contactStatus, result);
       })
       .catch(function (err) {
@@ -407,10 +424,26 @@ var ParticipantID = (function () {
           contact_email_given: data.contact_email_given,
         });
 
+        // index.html: an ID that has already completed the study (this
+        // browser's completion record). Nothing is uploaded; main.js then
+        // shows only the completion message.
+        if (_id && !window.DEV_MODE && Progress.isCompleted(_id)) {
+          _alreadyCompleted = true;
+          return;
+        }
+
         // Upload name/email only once the ID is accepted, so the contact
-        // file is always linked to a real ID.
+        // file is always linked to a real ID. Not again after a resume if
+        // the upload already succeeded before the interruption.
         if (!inResults && _id && (name || email)) {
-          _uploadContact(name, email);
+          if (Progress.contactSavedBefore()) {
+            _contactSaved = true;
+            _contactStatus = _contactStatus || 'saved';
+            data.contact_upload_skipped = true;
+            console.log('[Contact] already uploaded before the interruption; not repeated.');
+          } else {
+            _uploadContact(name, email);
+          }
         }
       },
     };
@@ -435,6 +468,9 @@ var ParticipantID = (function () {
 
   return {
     get:           get,
+    alreadyCompleted: alreadyCompleted,
+    state:         state,
+    restore:       restore,
     isSuperuser:   isSuperuser,
     isValid:       isValid,
     normalise:     normalise,
