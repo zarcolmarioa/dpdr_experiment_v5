@@ -114,11 +114,11 @@ var DevMenu = (function () {
       id: 'short',
       label: 'Shortened session &mdash; first ' + SHORT_N + ' trials per block',
       note: 'Every step of a real session (episodes, both blocks with practice, ' +
-            'the rest, words, state), each block cut to its first ' + SHORT_N +
+            'the rest, words, CDS items), each block cut to its first ' + SHORT_N +
             ' trials. Calibration and consent skipped. Rows are marked ' +
             'shortened = true. The CSV downloads.',
       apply: function () {
-        return _merge(_only(['episodes', 'practice', 'main', 'rest', 'words', 'state'],
+        return _merge(_only(['episodes', 'practice', 'main', 'rest', 'words', 'cds'],
                             SCREEN, [1, 2]),
                       { limits: { max_trials: SHORT_N, max_practice: 0 },
                         platform: 'local' });
@@ -214,11 +214,12 @@ var DevMenu = (function () {
       },
     },
     {
-      id: 'state',
-      label: 'State items only',
-      note: 'The four state items, 0&ndash;6 (placeholder wording until pasted in).',
+      id: 'cds',
+      label: 'CDS items only',
+      note: 'The four CDS items (2, 13, 19, 29), trait format: frequency, then ' +
+            'the duration when the frequency is not 0.',
       apply: function () {
-        return _merge(_only(['state'], [], []), { platform: 'local', limits: NO_LIMITS });
+        return _merge(_only(['cds'], [], []), { platform: 'local', limits: NO_LIMITS });
       },
     },
     {

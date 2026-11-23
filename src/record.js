@@ -9,7 +9,7 @@
  *      ratings; then the closing stamps).
  *   2. Build the per-trial row for a stimulus pair or a catch trial.
  *
- * The consent, episode, rest and state rows are built in their own phase
+ * The consent, episode, rest and CDS rows are built in their own phase
  * files.
  *
  * SESSION PROPERTIES OVERWRITE TRIAL FIELDS, IMPORTANT

@@ -2,7 +2,7 @@
  * phases/words.js — the word rating task.
  *
  * WHERE IT RUNS
- *   Once, after block 2 and before the state items (see main.js for the
+ *   Once, after block 2 and before the CDS items (see main.js for the
  *   session order). Participants rate the derealization episode (the
  *   episode they described in the interview, named with their own
  *   identifying words, whichever block came last); controls rate their
@@ -16,7 +16,7 @@
  * Splitting them is what makes the grid fit without scrolling. The whole
  * grid must be visible at once, so the participant can compare their
  * answers across words. The grid itself is phases/rating-grid.js, shared
- * with the state items.
+ * by no other screen now (the CDS items have their own layout).
  *
  * GROUP
  *   The instruction and the one-line question are the only group-dependent

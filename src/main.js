@@ -26,7 +26,7 @@
  *    8. rest, 1 minute               phases/rest.js        blocks.rest
  *    9. block 2                      as block 1
  *   10. word ratings                 phases/words.js       blocks.words
- *   11. state items                  phases/state.js       blocks.state
+ *   11. CDS items (4, trait format)  phases/cds.js         blocks.cds
  *   12. save  (DataPipe / Pavlovia / local download), by Platform.name()
  *   13. completion screen, showing whether the upload succeeded
  *
@@ -41,7 +41,7 @@
  * ========================================================================= */
 
 /* global CONFIG, ParticipantID, Record, PairsPhase, WordsPhase, RestPhase,
-          ConsentPhase, EpisodesPhase, StatePhase,
+          ConsentPhase, EpisodesPhase, CdsPhase,
           ScreenCheck, BrightnessConfirmation, GammaCalibration,
           Loader, Validate, DevMenu, Platform, TEXT_EN, TEXT_JA,
           initJsPsych, jsPsychHtmlKeyboardResponse, jsPsychSurveyText,
@@ -243,7 +243,8 @@ function _buildSaveNodes() {
 //
 // Three outcomes, all in the participant's language:
 //
-//   saved     — thanks, confirmation the responses were saved, contact line
+//   saved     — thanks, confirmation the responses were saved (no contact
+//               sentence)
 //   failed    — the upload did not go through: a button downloads the CSV so
 //               the participant can email it, rather than the session being
 //               lost silently
@@ -294,10 +295,9 @@ function _buildCompletionNode() {
                '<p id="end-download-done" class="hint" style="display:none">' +
                E.fail_done + '</p>';
       } else {
-        html = '<div class="card end-card"><h2>' + E.title + '</h2>' +
-               E.body +
-               '<p class="hint">' +
-               E.contact_line.replace(/\{CONTACT\}/g, contact) + '</p>';
+        // No contact sentence on the thank-you screen; the failure screen
+        // keeps the contact address.
+        html = '<div class="card end-card"><h2>' + E.title + '</h2>' + E.body;
       }
 
       if (CONFIG.debug) {
@@ -560,9 +560,9 @@ function runExperiment() {
     timeline = timeline.concat(WordsPhase.buildNodes(jsPsych));
   }
 
-  // 11. State items.
-  if (CONFIG.blocks.state) {
-    timeline = timeline.concat(StatePhase.buildNodes(jsPsych));
+  // 11. CDS items.
+  if (CONFIG.blocks.cds) {
+    timeline = timeline.concat(CdsPhase.buildNodes(jsPsych));
   }
 
   // 12-13. Save and completion.

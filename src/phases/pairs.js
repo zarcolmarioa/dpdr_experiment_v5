@@ -540,7 +540,7 @@ var PairsPhase = (function () {
       var vars = { N: practice.length, QUESTION: prompt(b.episode) };
       var intro = (b.position === 1)
         ? Loader.byEpisode(P.body, b.episode) + P.keys_line +
-          _fill(P.count_line, vars)
+          _fill(P.count_line, vars) + T.session.reload_warning
         : P.intro_b2 + _fill(P.question_changed, vars) +
           Loader.byEpisode(P.body_b2, b.episode) + _fill(P.count_line, vars);
       nodes.push(_screen(P.title, intro, P.continue_hint,
