@@ -208,6 +208,9 @@ jspsych-7-pavlovia-2021.12.js   the Pavlovia plugin (loaded only on Pavlovia)
 tools/sync_to_pavlovia.sh       copy a commit into the Pavlovia clone (SETUP §7)
 tools/check_package.js          offline check of the package, texts and config (SETUP §5)
 tools/test_trial_label.js       browser test of the dev trial label (header says how to run it)
+tools/make_link_codes.py        makes the opaque link codes (SETUP §6, "Link codes"; not used yet)
+tools/test_make_link_codes.py   its self-test
+tools/link_codes_test_vectors.json  test vectors for the link code entries
 data/sets/v5c_180/      FROZEN package in use: README.txt, design.json, assignment.json,
                         lists/ (8 lists of 200), practice/ (block1, block2: 3 each),
                         items.csv (406 items), preload.json (617 paths), manifest.csv,
