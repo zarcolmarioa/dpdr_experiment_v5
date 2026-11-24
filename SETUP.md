@@ -212,8 +212,8 @@ shown + 15 only on catch rows = 632, 42 scenes). `node tools/check_package.js
 package, so the older v5b_180, whose design.json has no
 `practice_feedback_trials`, no longer passes; that is expected.
 It prints `PASS` or `FAIL` and exits 1 on any error. The placeholder
-warnings (consent, `[TO COMPLETE after pilot]`) remain until
-the approved wording is pasted in.
+warning (the two `[GIVEN NAME]` markers in the English consent) remains
+until they are filled in.
 
 **One caution.** Git keeps every version of every file permanently, and PNGs
 do not delta-compress. That is one more reason never to touch the package
@@ -282,10 +282,14 @@ and saves accordingly:
 | your computer | `local` | downloaded CSV | separate DataPipe file, as on GitHub |
 
 The name/email rule is `participant.contact_storage: 'auto'`. On Pavlovia
-the consent and ID screens use their `*_results_file` wording, which says
-the name and email are stored with the responses (see
-`text/*/instructions.js`; replace `consent.body_results_file` with the
-approved wording too). Nothing is sent to DataPipe from Pavlovia.
+the ID screen uses its `*_results_file` wording, which says the name and
+email are stored with the responses (see `text/*/instructions.js`). The
+consent text is the approved one on both platforms (`consent.body` and
+`consent.body_results_file` are the same text). Note that it says the
+list linking names to participant numbers is kept separately from the
+data, which holds on GitHub Pages but not on Pavlovia, where the name and
+email are in the response file. Nothing is sent to DataPipe from
+Pavlovia.
 
 Libraries: `libraries: 'bundled'` (default) loads our copy of jsPsych
 7.1.2, its plugins and jQuery 2.2.0 from `vendor/` — byte-identical to the
@@ -339,9 +343,9 @@ repository** (`data/` folder). The GitHub repository is public. So:
    this sync (it no longer exists here); the results in `data/` are kept.
 
 4. On the Pavlovia experiment page: keep the saving format **CSV** (if
-   the page offers a choice), leave **Save incomplete results OFF** (an
-   abandoned session must leave nothing behind — the consent text says
-   so), and assign credits or a licence. Pavlovia opens `index.html`.
+   the page offers a choice), leave **Save incomplete results OFF** (so that,
+   as with DataPipe, only finished sessions are saved), and assign credits
+   or a licence. Pavlovia opens `index.html`.
 
 ### Piloting, then Running
 

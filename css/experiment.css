@@ -657,6 +657,41 @@ body.allow-scaling .stim-panel {
 }
 .consent-text p { margin: .6rem 0; }
 
+/* The consent text is exempt from the one-line centring rule
+   (src/text-align.js): paragraphs are justified (as .card p), section
+   headings and the researcher list are left-aligned. A heading sits close
+   to the paragraph it introduces. */
+.consent-text p.consent-heading {
+  text-align: left;
+  margin: 1.2rem 0 .2rem;
+}
+.consent-text p.consent-heading + p { margin-top: .2rem; }
+.consent-text p.consent-line {
+  text-align: left;
+  margin: .15rem 0;
+}
+
+/* Printing (the consent says it may be printed or saved): the box no
+   longer scrolls, so the whole text is printed, across as many pages as it
+   needs. Nothing changes on screen. The full-page layout of the experiment
+   (fixed height, centred, no page scroll) is undone for print only. */
+@media print {
+  html, body, .jspsych-display-element, .jspsych-content-wrapper,
+  .jspsych-content {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  .consent-card { box-shadow: none; max-width: none; }
+  .consent-text {
+    max-height: none;
+    overflow: visible;
+    border-bottom: none;
+  }
+}
+
 .consent-buttons {
   display: flex;
   justify-content: center;

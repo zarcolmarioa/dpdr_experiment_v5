@@ -200,7 +200,7 @@ These repeat identically on every row, so read them from any row with
 | `group` | `participant` / `control` | from `?group=` in the link. A link without a valid group does not start, so this is never empty in a saved file |
 | `slot` | `37` | from `?slot=` in the link: a whole number, 1 or more. A link without a valid slot does not start |
 | `interview_date` | `2026-11-03` | from `?idate=YYYY-MM-DD` in the link. **Empty** if the link had none, or an invalid date |
-| `consent_given` | `True` | always `True` in a saved file (declining saves nothing). Empty only for dev sessions run with the consent screen off |
+| `consent_given` | `True` | always `True` in a saved file (declining saves nothing): the one checkbox, the approved consent sentence ("I have understood the explanation above and, of my own free will, agree to participate in this study."), was ticked and "I agree, continue" pressed. The checkbox does not ask about age. Empty only for dev sessions run with the consent screen off |
 | `is_test` | `False` | `True` when a test ID was used: `Z_21121989` (yours) or `CHAIN_2026` (colleagues) |
 | `is_dev` | `False` | `True` when the session started from `dev.html`, or was shortened |
 | `shortened` | `False` | `True` when a dev run cut each block to its first `shortened_to` trials (`CONFIG.limits`, dev.html only). Such a session is never valid data |
@@ -353,9 +353,10 @@ any of these columns; this version never writes it.
 
 The free-text answers (up to 200 characters) are in the participant's own
 words and language, so they need coding before analysis. They are stored
-**with the responses**; the consent text asks participants not to include
-names or other identifying details, but check them before any data are
-shared.
+**with the responses**. The episode screen asks participants not to
+include names or other identifying details (the last sentence of
+`episodes.questions_intro`, just above the fields; the approved consent
+text does not say this), but check them before any data are shared.
 
 The v4 columns `episode_when`, `episode_duration`, `episode_where` and
 `episode_clarity` no longer exist.
@@ -682,8 +683,10 @@ DataPipe experiment (`contact_datapipe.experiment_id`, now `T8mzFmXrMcjw`,
 a **test** experiment until data collection) and its own Zenodo record
 (`[Zenodo record — to complete]`) — even if the session is never finished.
 They are removed from the response data before anything else happens, so
-the response files stay pseudonymised. (The consent text tells
-participants this.)
+the response files stay pseudonymised. (The ID screen tells
+participants that their name and email are stored separately from their
+answers; neither it nor the approved consent text says that they are
+uploaded straight away.)
 
 ```
 contact_<participant_id>_<session start, Japan time>.csv

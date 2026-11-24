@@ -21,8 +21,10 @@
  * measured again.
  *
  * FORM LAYOUTS are left as they are: the episode questions (.aq-list) and
- * the rating grids (.wr-wrap) keep their alignment. The catch screen is
- * centred by its own CSS.
+ * the rating grids (.wr-wrap) keep their alignment. So does the consent
+ * text (.consent-text): its paragraphs are justified and its headings and
+ * researcher list left-aligned, even when they fit on one line. The catch
+ * screen is centred by its own CSS.
  *
  * Nothing here is recorded in the data.
  * ========================================================================= */
@@ -36,8 +38,10 @@
     '.check-line span',
   ].join(', ');
 
-  // Containers whose content keeps its own form alignment.
-  var EXEMPT = '.aq-list, .wr-wrap';
+  // Containers whose content keeps its own alignment: the form layouts,
+  // and the consent text (a long document: headings and the researcher
+  // list left-aligned, every other paragraph justified, by the CSS).
+  var EXEMPT = '.aq-list, .wr-wrap, .consent-text';
 
   // Number of rendered lines of an element's text: the distinct line boxes
   // of its inline content.

@@ -1,7 +1,7 @@
 /* =========================================================================
  * phases/consent.js — the consent screen, the FIRST screen of a session.
  *
- * Layout: the consent text, an "I agree" checkbox, and two buttons:
+ * Layout: the consent text, ONE checkbox, and two buttons:
  *   "I agree, continue"  — enabled only once the box is ticked. Stamps
  *                          consent_given = true on every row and continues.
  *   "I do not agree"     — always enabled. Shows a short thank-you screen
@@ -10,12 +10,20 @@
  *                          contact screen (the only other upload) comes
  *                          later. No full screen, no image download either.
  *
- * The wording lives in text/<lang>/instructions.js, section `consent`:
- * `body`, or `body_results_file` when name and email are kept in the
- * response file (Pavlovia, Platform.contactStorage() 'results_file'). It
- * is a PLACEHOLDER until the approved text is pasted in; validate.js warns
- * while bracketed gaps remain, and refuses to start a production session
- * (index.html, debug off) with them.
+ * The wording lives in text/<lang>/instructions.js, section `consent`: the
+ * ethics-approved text, the same for both groups and both platforms. The
+ * code shows `body`, or `body_results_file` when name and email are kept in
+ * the response file (Pavlovia, Platform.contactStorage() 'results_file');
+ * the two keys now hold the same text. The checkbox is the approved consent
+ * sentence (it does not mention age). validate.js warns while a bracketed
+ * gap remains (the two [GIVEN NAME] markers in the English researcher
+ * list), and refuses to start a production session (index.html, debug off)
+ * with one.
+ *
+ * The text scrolls inside the card, so the checkbox and both buttons stay
+ * on screen; it is exempt from the one-line centring rule (headings and
+ * the researcher list left-aligned, paragraphs justified), and printing the
+ * page prints all of it (css/experiment.css, @media print).
  *
  * Switch: CONFIG.blocks.consent. index.html refuses to start with it off
  * (validate.js); only dev.html can skip it.

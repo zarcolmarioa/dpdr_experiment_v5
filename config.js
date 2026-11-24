@@ -192,8 +192,10 @@ var CONFIG = {
     //                    project. NEVER use it with 'github': the response
     //                    file goes to Zenodo.
     //
-    // The consent and ID screens say which applies (the *_results_file
-    // texts). Stamped on every row as `contact_storage`.
+    // The ID screen says which applies (its *_results_file texts); the
+    // approved consent text is the same for both (consent.body and
+    // consent.body_results_file hold the same text). Stamped on every row
+    // as `contact_storage`.
     contact_storage:   'auto',
   },
 
