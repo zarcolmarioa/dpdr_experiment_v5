@@ -381,10 +381,11 @@ does — DataPipe from GitHub Pages or your computer, Pavlovia on Pavlovia.
       contact details), connect them to their Zenodo records, switch
       "Enable data collection" on, set the contact one's Required Fields to
       `participant_id`, and put the new IDs in `config.js`.
-- [ ] Fill in every **[TO COMPLETE after pilot]**: the session length in the
-      consent text and in this README, and the block length in
-      `practice.end_body` (both languages).
-- [ ] Paste the **approved consent text** (both languages).
+- [ ] Fill in the two **[GIVEN NAME]** markers in the English consent
+      (the researcher list, `CONSENT_BODY_EN` in `text/en/instructions.js`).
+      The approved consent text is otherwise in place, in both languages.
+- [ ] Check in the pilot that a session takes about 30 minutes, as the
+      approved consent text says.
 - [ ] Decide how slots are handed out and recorded (one counter per group,
       starting at 1, never reused).
 
@@ -420,13 +421,12 @@ single invitation while any item fails**.
 
 **Text**
 
-- [ ] The **approved consent text** pasted into `consent` in both
-      `text/en/instructions.js` and `text/ja/instructions.js`, with **no
-      placeholder left** (no `[bracketed gap]`, including `[TO COMPLETE
-      after pilot]`). With `debug: false`, `index.html` refuses to start
-      while any gap remains anywhere in the text. On **Pavlovia** the text
-      shown is `consent.body_results_file` (name and email stored with the
-      responses): that is the one to replace there.
+- [ ] **No placeholder left** in the text (no `[bracketed gap]`; the
+      last ones are the two `[GIVEN NAME]` markers in the English consent).
+      With `debug: false`, `index.html` refuses to start while any gap
+      remains anywhere in the text. The approved consent text is the same
+      for both groups and both platforms: `consent.body` and
+      `consent.body_results_file` hold the same text.
 - [ ] The **Japanese strings checked by a native speaker**: every box in
       `text/ja/STRINGS_TO_CHECK.md` ticked, corrections made in
       `text/ja/*.js`.
