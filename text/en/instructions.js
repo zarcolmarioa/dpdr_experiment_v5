@@ -61,14 +61,132 @@
  *  - Alignment is set by src/text-align.js and the CSS, not here: text
  *    that fits on one line is centred, text that wraps is justified.
  *
- * PLACEHOLDERS, to be replaced before recruiting
- * -----------------------------------------------
- *  - consent.*      the whole consent text (PLACEHOLDER, see below)
- *  - the session and block lengths, [TO COMPLETE after pilot]
- * Bracketed gaps like [researcher names] anywhere in this file are detected
- * by validate.js: a warning in debug mode, an error on index.html with
- * debug off.
+ * CONSENT
+ * -------
+ *  - consent.*      the ethics-approved text (English translation of the
+ *                   approved Japanese), see CONSENT_BODY_EN below. The two
+ *                   [GIVEN NAME] markers in the researcher list are to be
+ *                   filled in by the research team.
+ * Bracketed gaps like [GIVEN NAME] anywhere in this file are detected by
+ * validate.js: a warning in debug mode, an error on index.html with debug
+ * off.
  * ========================================================================= */
+
+// --- The consent text ------------------------------------------------------
+// The ethics-approved consent text (English translation of the approved
+// Japanese, see text/ja/instructions.js), used as both consent.body and
+// consent.body_results_file below: the approved text does not distinguish
+// the two storage options, so the two keys hold the same text.
+// Do not rephrase it. Only the two [GIVEN NAME] markers are to be filled in.
+//
+// Layout: section headings in bold on their own line (consent-heading),
+// the researcher list one per line (consent-line), both left-aligned; every
+// other paragraph is justified. The whole text is exempt from the rule that
+// centres one-line text (src/text-align.js) and scrolls inside the card
+// (css/experiment.css), which also prints it in full.
+var CONSENT_BODY_EN =
+  '<p>Please read all of the explanation below. If you understand it and ' +
+  'agree to participate in the online image selection task, please select ' +
+  '"I have understood the explanation above and, of my own free will, ' +
+  'agree to participate in this study."</p>' +
+  '<p class="consent-heading"><b>Purpose of the study</b></p>' +
+  '<p>This study follows the questionnaire on psychological ' +
+  'characteristics in which you previously participated. Experiences of ' +
+  'derealization are known to occur temporarily even in healthy people. ' +
+  'In this study, we ask a number of questions about what such ' +
+  'experiences were like, with the aim of clarifying their ' +
+  'characteristics.</p>' +
+  '<p class="consent-heading"><b>Voluntary participation</b></p>' +
+  '<p>Whether or not to participate in this study is your own decision. ' +
+  'If you wish, you may print or save this explanation for your records. ' +
+  'Even after giving your consent, you may withdraw it and stop ' +
+  'participating at any time.</p>' +
+  '<p class="consent-heading"><b>What the study involves</b></p>' +
+  '<p>You will complete an online image selection task. You will be shown ' +
+  'pairs of images that differ in appearance and, following the ' +
+  'instructions on the screen, will choose one image from each pair. ' +
+  'During the task, you will also answer a few questions about past ' +
+  'experiences. The task takes approximately 30 minutes.</p>' +
+  '<p class="consent-heading"><b>Reward</b></p>' +
+  '<p>Participants in the image selection task will receive a reward of ' +
+  '700 yen. After we confirm that you have completed the study, the ' +
+  'reward will be sent as an Amazon gift card to the email address you ' +
+  'provide for this purpose.</p>' +
+  '<p class="consent-heading"><b>Possible disadvantages of ' +
+  'participation</b></p>' +
+  '<p>Because this study asks you to recall past experiences, some people ' +
+  'may feel anxiety or discomfort. You do not have to answer any question ' +
+  'you do not wish to answer, and you may interrupt or withdraw from the ' +
+  'online task at any time, for any reason. Withdrawing will not cause ' +
+  'you any disadvantage other than not receiving the reward.</p>' +
+  '<p>This study is a psychological investigation of everyday experiences ' +
+  'that can occur in healthy people, and it does not involve any medical ' +
+  'diagnosis or assessment. If you have any concerns about your physical ' +
+  'or mental health, we recommend that you consult a medical institution ' +
+  'or the university\'s counselling services.</p>' +
+  '<p class="consent-heading"><b>Handling of personal information</b></p>' +
+  '<p>The data obtained in this study will be anonymised before analysis, ' +
+  'so no individual can be identified from the data. Records will use ' +
+  'only a participant number, not your name. The list linking names to ' +
+  'participant numbers will be kept separately from the data, as an ' +
+  'electronic file protected by a password, on a computer owned by the ' +
+  'university.</p>' +
+  '<p>The image selection task is conducted on a web page. Your responses ' +
+  'will be sent to a private and secure area of an online data storage ' +
+  'service for research, then promptly transferred to a computer owned by ' +
+  'the university and stored as an electronic file protected by a ' +
+  'password.</p>' +
+  '<p>The data collected in this study will be kept by the researchers as ' +
+  'electronic files protected by a password. If you do not agree to the ' +
+  'section "Publication of data" below, the data will be destroyed once ' +
+  'the results have been published.</p>' +
+  '<p>The data collected in this study will be used for academic papers ' +
+  'and conference presentations and may be made public. Even in that ' +
+  'case, no individual will be identified. Parts of your answers may be ' +
+  'quoted to convey what the experiences were like. In such cases, names ' +
+  'will not be used, and any content that could identify an individual ' +
+  'will be removed or altered.</p>' +
+  '<p>If you wish to withdraw your data, please contact the researchers ' +
+  'by email at any time.</p>' +
+  '<p class="consent-heading"><b>Publication of data</b></p>' +
+  '<p>To increase the transparency of this research and to allow other ' +
+  'researchers to verify and reuse it, the collected data may be ' +
+  'published on the internet as open data. The data that may be published ' +
+  'include basic information such as age and gender, and data such as ' +
+  'task performance.</p>' +
+  '<p>Published data may be used in future research that has not been ' +
+  'specified at the time of consent. Because published data can be widely ' +
+  'distributed, copies that have already been distributed cannot be ' +
+  'recalled, even if you request withdrawal after publication. Before ' +
+  'publication, you may withdraw your data at any time by contacting the ' +
+  'researchers by email.</p>' +
+  '<p>Even if you do not agree to the publication of your data, you may ' +
+  'still participate in this study. In that case, your data will not be ' +
+  'published.</p>' +
+  '<p class="consent-heading"><b>Ethical review</b></p>' +
+  '<p>This study has been approved by the Ethics Committee of the Center ' +
+  'for Experimental Research in Social Sciences (CERSS), Hokkaido ' +
+  'University (project title: "Experiments on perceptual discrimination ' +
+  'tasks in joint action between humans and robots"; reference number: ' +
+  'R6-26-1; amendment approval number: R6-26-1).</p>' +
+  '<p class="consent-heading"><b>Researchers</b></p>' +
+  '<p class="consent-line">Principal investigator:</p>' +
+  '<p class="consent-line">Keisuke Suzuki, Associate Professor, Center ' +
+  'for Human Nature, Artificial Intelligence, and Neuroscience (CHAIN), ' +
+  'Hokkaido University (ksk@chain.hokudai.ac.jp)</p>' +
+  '<p class="consent-line">Collaborating researchers:</p>' +
+  '<p class="consent-line">Katsunori Miyahara, Associate Professor, ' +
+  'CHAIN, Hokkaido University</p>' +
+  '<p class="consent-line">Daisuke Sakamoto, Professor, Faculty of ' +
+  'Information Science and Technology and CHAIN, Hokkaido University</p>' +
+  '<p class="consent-line">[GIVEN NAME] Imai, Academic Researcher, ' +
+  'Department of Psychology, Faculty of Humanities and Human Sciences, ' +
+  'Hokkaido University</p>' +
+  '<p class="consent-line">[GIVEN NAME] Sawada, Research Assistant, ' +
+  'Psychology Laboratory, Division of Human Sciences, Graduate School of ' +
+  'Humanities and Human Sciences, and CHAIN, Hokkaido University</p>' +
+  '<p>If you have any questions or concerns about this study, please ' +
+  'contact Keisuke Suzuki by email.</p>';
 
 var TEXT_EN = {
 
@@ -83,113 +201,20 @@ var TEXT_EN = {
   },
 
   // --- Consent (the first screen) -------------------------------------------
-  // >>> PLACEHOLDER: NOT THE APPROVED WORDING. <<<
-  // Replace title/body/checkbox with the ethics-approved text, in this file
-  // and in text/ja/instructions.js, and nowhere else. Every [bracketed gap]
-  // must be filled: validate.js refuses a production session while any
-  // remain.
-  //
-  // Facts the approved text must keep true to how the code behaves:
-  //  - an optional name and email are uploaded AS SOON AS THEY ARE ENTERED
-  //    (ID screen), separately from the responses, even if the session is
-  //    not finished;
-  //  - everything else is uploaded only at the very end; closing the page
-  //    earlier saves nothing else;
-  //  - the answers about the recalled episodes, including anything typed,
-  //    are stored WITH the responses; a few questions are about the
-  //    episodes, including how they felt emotionally (the identifying
-  //    words, the emotional tone and the intensity are required; when,
-  //    how long and where are optional);
-  //  - controls are not told about any interview (they had none).
-  //  - without a participant ID, the name and email are what link the
-  //    responses to the person.
+  // The ethics-approved text. The same text is used for both groups and on
+  // both platforms. body and body_results_file are IDENTICAL (both are
+  // CONSENT_BODY_EN, above): the code still picks body_results_file when name
+  // and email are kept in the response file (Pavlovia), so both keys stay.
+  // The checkbox is the approved consent sentence (it no longer mentions
+  // age). Keep button_agree, button_decline and the declined screen as they
+  // are.
   consent: {
-    title: 'Consent to take part',
-    body:
-      '<p>You are invited to take part in a research study about how people ' +
-      'perceive their surroundings. It is run by [researcher names] at ' +
-      '[institution].</p>' +
-      '<p><b>What you will do:</b> bring to mind experiences from your own ' +
-      'life and answer a few short questions about them, then look at pairs ' +
-      'of photographs and choose between them, in two parts with a short ' +
-      'rest in between, and finally answer a few more short questions. It ' +
-      'takes about [TO COMPLETE after pilot] minutes.</p>' +
-      '<p><b>Risks:</b> we do not expect any risks beyond those of everyday ' +
-      'computer use. Some questions ask about unusual experiences; you may ' +
-      'stop at any time.</p>' +
-      '<p><b>Benefits:</b> there is no direct benefit to you. ' +
-      '[Compensation, if any.]</p>' +
-      '<p><b>Your data:</b> your responses are stored under a study ID, ' +
-      'without your name. Results are reported only for groups or without ' +
-      'identifying information. [Storage period and who has access.] ' +
-      '[Whether anonymised data may be shared publicly, e.g. on Zenodo.]</p>' +
-      '<p>As part of the study, you will be asked to write a few words of ' +
-      'your own to identify each experience you bring to mind, and to answer ' +
-      'a few short questions about these experiences, including how they ' +
-      'felt emotionally. Some of these questions are optional. Your answers, ' +
-      'including anything you type, are stored with your responses, so ' +
-      'please do not include names or other details that could identify you ' +
-      'or anyone else.</p>' +
-      '<p><b>Voluntary participation:</b> taking part is voluntary. You may ' +
-      'stop at any time by closing this page. Your responses are saved only ' +
-      'at the end of the study, so if you close the page before then, none of ' +
-      'them are saved. The exception is your name and email address: they are ' +
-      'optional, and if you provide them, they are saved immediately, ' +
-      'separately from your responses, even if you do not finish. If you take ' +
-      'part without a participant ID, your name and email address are what ' +
-      'links your responses to you. ' +
-      '[How to withdraw data after submission.]</p>' +
-      '<p><b>Contact:</b> [researcher email]. For questions about your rights ' +
-      'as a participant: [ethics committee contact]. [Ethics approval ' +
-      'number.]</p>',
-    // The same text for Pavlovia, where a name and email address, if
-    // given, are kept in the response file and saved with it at the end
-    // (CONFIG.participant.contact_storage 'results_file'). Only the 'Your
-    // data' and 'Voluntary participation' paragraphs differ. Replace it
-    // with the approved wording too if the study runs on Pavlovia.
-    body_results_file:
-      '<p>You are invited to take part in a research study about how people ' +
-      'perceive their surroundings. It is run by [researcher names] at ' +
-      '[institution].</p>' +
-      '<p><b>What you will do:</b> bring to mind experiences from your own ' +
-      'life and answer a few short questions about them, then look at pairs ' +
-      'of photographs and choose between them, in two parts with a short ' +
-      'rest in between, and finally answer a few more short questions. It ' +
-      'takes about [TO COMPLETE after pilot] minutes.</p>' +
-      '<p><b>Risks:</b> we do not expect any risks beyond those of everyday ' +
-      'computer use. Some questions ask about unusual experiences; you may ' +
-      'stop at any time.</p>' +
-      '<p><b>Benefits:</b> there is no direct benefit to you. ' +
-      '[Compensation, if any.]</p>' +
-      '<p><b>Your data:</b> your responses are stored under a study ID. ' +
-      'If you provide your name and email address, they are stored in the same ' +
-      'file as your responses, which only the research team can access. ' +
-      'Results are reported only for groups or without identifying ' +
-      'information. [Storage period and who has access.] [Whether ' +
-      'anonymised data may be shared publicly, e.g. on Zenodo; your name and ' +
-      'email address are never shared.]</p>' +
-      '<p>As part of the study, you will be asked to write a few words of ' +
-      'your own to identify each experience you bring to mind, and to answer ' +
-      'a few short questions about these experiences, including how they ' +
-      'felt emotionally. Some of these questions are optional. Your answers, ' +
-      'including anything you type, are stored with your responses, so ' +
-      'please do not include names or other details that could identify you ' +
-      'or anyone else.</p>' +
-      '<p><b>Voluntary participation:</b> taking part is voluntary. You may ' +
-      'stop at any time by closing this page. Your responses are saved only ' +
-      'at the end of the study, so if you close the page before then, none of ' +
-      'them are saved. The same applies to your name and email address: they ' +
-      'are optional, and if you provide them, they are saved together with ' +
-      'your responses at the end. If you take ' +
-      'part without a participant ID, your name and email address are what ' +
-      'links your responses to you. ' +
-      '[How to withdraw data after submission.]</p>' +
-      '<p><b>Contact:</b> [researcher email]. For questions about your rights ' +
-      'as a participant: [ethics committee contact]. [Ethics approval ' +
-      'number.]</p>',
+    title: 'Consent to participate in the online image selection task',
+    body:              CONSENT_BODY_EN,
+    body_results_file: CONSENT_BODY_EN,
     checkbox:
-      'I have read the information above, I am at least 18 years old, and I ' +
-      'agree to take part.',
+      'I have understood the explanation above and, of my own free will, ' +
+      'agree to participate in this study.',
     button_agree:   'I agree, continue',
     button_decline: 'I do not agree',
 
@@ -275,9 +300,14 @@ var TEXT_EN = {
       label: 'A few words to identify this episode',
       hint:  'e.g. walking home after work',
     },
+    // Shown just above the fields on every recalled episode screen. Its last
+    // sentence asks participants not to type identifying details (the
+    // approved consent text does not say this).
     questions_intro:
       'The following questions are intended to help you recall the episode. ' +
-      'The questions marked as optional may be left blank.',
+      'The questions marked as optional may be left blank. Please do not ' +
+      'include names or other details that could identify you or anyone ' +
+      'else.',
     // Added after the label of each optional question.
     optional_tag: '(optional)',
     questions: {

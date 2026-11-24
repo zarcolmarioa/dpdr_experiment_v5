@@ -884,7 +884,8 @@ var Validate = (function () {
     });
     if (gaps.length) {
       var msg = 'Placeholder text still in use (' + gaps.join('; ') + '). ' +
-                'Paste the approved wording before recruiting.';
+                'Fill in every [bracketed gap] (in the consent, the two ' +
+                '[GIVEN NAME] markers) before recruiting.';
       if (opts.production) errors.push(msg); else warnings.push(msg);
     }
 
