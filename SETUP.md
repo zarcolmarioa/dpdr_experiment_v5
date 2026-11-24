@@ -267,6 +267,271 @@ Before sending, open one participant link and one control link yourself and
 check the episode screens show the right wording (controls must never see
 the word "interview").
 
+### Link codes
+
+**The experiment does not use the codes yet.** A later change will make it
+read them. Until then, links stay as described above.
+
+Each link will carry one random code (`?code=…`) in place of `pid`, `group`,
+`slot` and `idate`. Participants then cannot change their condition by
+editing the link, and the link does not show their group.
+
+`tools/make_link_codes.py` (Python 3.8+, standard library only) makes one
+code per link. A link is a phase (`test`, `pilot`, `main`), a group and a
+slot. Slots are numbered from 1 separately within each phase and group, and
+slot n keeps its meaning (row ((n − 1) mod 64) + 1 of the group's table).
+Test and pilot codes therefore reuse the first rows of the table, so that
+testers see different counterbalancing orders.
+
+Codes are 12 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0, O, 1,
+I or L), with no separators. They are drawn with Python's `secrets` module
+and are all different. No code consists only of digits, or of digits with a
+single E, because Excel and Numbers would turn such a code into a number.
+Codes will be accepted case-insensitively.
+
+#### What stays private and what is committed
+
+| file | where | contents |
+|---|---|---|
+| `link_codes_private.csv` | `--private-dir`, **never committed** | `link_id, phase, group, slot, code, created_utc, pid, idate, tester, sent_date, notes` |
+| `link_codes_manifest.txt` | `--private-dir`, never committed | counts per phase and group; the sha256 checksum of the public file |
+| `backups/` | `--private-dir` | the three files as they were before each `--extend` |
+| the public JSON | `--public-out`; committed **later**, when the experiment reads it | one encrypted entry per code. No codes, no participant IDs, no names, nothing about people |
+
+- **Where the private folder may be:** the script refuses to put it inside
+  this repository. `.gitignore` also lists both private file names, as a
+  second safeguard. The folder is created readable only by you (700), and
+  the table and manifest are 600.
+- **`link_id`:** readable, with no code in it, for example
+  `main_participant_017` or `test_control_003`.
+- **Columns you fill in:** `pid`, `idate`, `tester` (the lab member a test
+  code was given to), `sent_date` and `notes` start empty. The script never
+  changes them. You may also add columns of your own; they are kept as they
+  are.
+- **Codes on screen:** codes are never printed unless you add `--show`. With
+  `--show`, the script prints the codes made by that run (with `--verify`,
+  all of them).
+
+#### Commands
+
+Run them from your clone of this repository. The paths are examples; use
+the same two paths every time.
+
+First run (8 test, 16 pilot and 64 main codes per group, 176 in all):
+
+```bash
+python3 tools/make_link_codes.py \
+    --private-dir ~/dpdr_private/link_codes \
+    --public-out  ~/dpdr_private/link_codes/codes_public.json
+```
+
+Other counts: add `--test N`, `--pilot N` and/or `--main N` (per group).
+
+If the private table already exists, the script refuses to run. **Codes are
+never made again or changed.** To add codes, use `--extend` with the number
+of **additional** codes per group. A count you leave out adds none, and
+slot numbers continue where they stopped:
+
+```bash
+# 4 more test codes per group (test slots 9 to 12)
+python3 tools/make_link_codes.py \
+    --private-dir ~/dpdr_private/link_codes \
+    --public-out  ~/dpdr_private/link_codes/codes_public.json \
+    --extend --test 4
+
+# 20 more main slots per group (main slots 65 to 84)
+python3 tools/make_link_codes.py \
+    --private-dir ~/dpdr_private/link_codes \
+    --public-out  ~/dpdr_private/link_codes/codes_public.json \
+    --extend --main 20
+```
+
+What `--extend` does:
+
+1. **Checks first.** It runs the same checks as `--verify`. If anything
+   disagrees (for example, a row deleted in a spreadsheet), it changes
+   nothing and says what is wrong.
+2. **Keeps a copy.** The three files as they were go into
+   `<private-dir>/backups/`.
+3. **Adds the new rows** at the end of the table. Every existing row and
+   every column you filled in stays as it was.
+4. **Rewrites** the public file from the whole table, and updates the
+   manifest.
+
+Check, writing nothing:
+
+```bash
+python3 tools/make_link_codes.py \
+    --private-dir ~/dpdr_private/link_codes \
+    --public-out  ~/dpdr_private/link_codes/codes_public.json \
+    --verify
+```
+
+It prints `PASS` or `FAIL` with a list of problems, and exits 1 on any
+problem. It checks that:
+
+- every private row's code is well formed and has an entry in the public
+  file, which decrypts to the same `link_id`, phase, group and slot;
+- no code or `link_id` appears twice;
+- the slots run from 1 with no gaps;
+- the public file has no extra entries;
+- the public file is exactly what the table gives (it is rebuilt from the
+  table and compared byte for byte);
+- its sha256 matches the manifest.
+
+Once the public file is in the repository, give that copy's path as
+`--public-out` to check it.
+
+#### Editing the table in Excel or Numbers
+
+The table is UTF-8 with a byte order mark, so that Excel on the Mac shows
+Japanese names correctly. You can fill in the empty columns and save:
+
+- **Excel:** save as **CSV UTF-8 (Comma delimited)**. Plain "CSV" is not
+  UTF-8 and is refused, with a message.
+- **Numbers:** export to CSV with **Unicode (UTF-8)** encoding.
+
+The table may come back with or without the byte order mark, with either
+kind of line ending, and with empty rows at the end. A slot may be saved as
+`17.0`. All of this is fine.
+
+- **Codes:** they are read as text and cannot be turned into numbers.
+- **`created_utc`:** it is written as `2026-11-24T05:06:07Z`. If a
+  spreadsheet rewrites it in another form, `--verify` names the row; restore
+  that cell from `backups/` or from an earlier copy.
+- **Never edit** `link_id`, `phase`, `group`, `slot` or `code`, and never
+  delete or reorder rows by hand. Sorting is harmless, though, since rows
+  are matched by their code.
+
+#### The public file and how an entry is encrypted
+
+```
+{
+ "codes": { "<lookup key>": "<entry>", ... },
+ "created_utc": "<the latest created_utc in the table>",
+ "entry": "base64 of 160 bytes: ...",
+ "format": "dpdr-link-codes-v1",
+ "hash": "sha256 of the upper-case code, UTF-8, lower-case hex",
+ "input": "remove surrounding spaces and upper-case the code before use ..."
+}
+```
+
+Keys are sorted, with one space of indentation and a final newline, so the
+same table always gives exactly the same file. Each entry can be read only
+with its code. Without a code, the file shows only how many codes there
+are: not their phases or groups, and not their link IDs.
+
+All of the scheme uses only **SHA-256** and **HMAC-SHA256**, both in the
+browser's Web Crypto API (`crypto.subtle.digest`, `sign` and `verify`). No
+library is needed. With `C` the code's bytes:
+
+| step | definition |
+|---|---|
+| code `C` | the typed code with surrounding spaces removed, upper-cased, as UTF-8 bytes (12 ASCII bytes) |
+| lookup key `L` | `SHA-256(C)`, 32 bytes; its lower-case hex is the key in `codes` |
+| encryption key `KE` | `HMAC-SHA256(key = C, message = "dpdr-link-codes-v1 encryption key")` (ASCII), 32 bytes |
+| integrity key `KM` | `HMAC-SHA256(key = C, message = "dpdr-link-codes-v1 integrity key")` (ASCII), 32 bytes |
+| plaintext `P` | 128 bytes: the JSON `{"group":…,"link_id":…,"phase":…,"slot":…}`, with keys sorted, no spaces and ASCII only, padded at the end with spaces (0x20) to 128 bytes, so every entry has the same size |
+| keystream `S` | `HMAC-SHA256(KE, 0x00000000) ‖ HMAC-SHA256(KE, 0x00000001) ‖ HMAC-SHA256(KE, 0x00000002) ‖ HMAC-SHA256(KE, 0x00000003)`: a 4-byte big-endian counter, 128 bytes in all |
+| ciphertext `X` | `P XOR S`, 128 bytes |
+| tag `T` | `HMAC-SHA256(KM, "dpdr-link-codes-v1" ‖ 0x00 ‖ L ‖ X)`, 32 bytes (`L` as its 32 raw bytes) |
+| entry | standard base64 (with `=` padding) of `X ‖ T`: 160 bytes, 216 characters |
+
+**No nonce or IV.** Each code has its own keys, and each code encrypts
+exactly one message, which never changes. Encryption is deterministic,
+which is what makes the file reproducible.
+
+**Decrypting.** Normalise the code and compute `L`, then look up `hex(L)`
+in `codes`. If there is no entry, the code is unknown.
+
+1. Base64-decode the entry. It must be exactly 160 bytes.
+2. Split it into `X` (the first 128 bytes) and `T` (the last 32).
+3. Recompute the tag from `KM`, `L` and `X`, and compare it with `T` in
+   constant time (`crypto.subtle.verify`). **If they differ, reject the
+   code:** never use an entry that fails this check.
+4. Only then compute `P = X XOR S` and parse it as JSON (the trailing
+   spaces are valid JSON whitespace).
+
+The tag covers `L`, so an entry moved to another code's key fails too.
+`tools/make_link_codes.py` also rejects a decrypted entry whose `link_id`
+does not match its phase, group and slot.
+
+A browser implementation, checked against the test vectors in Node's Web
+Crypto and in Chromium:
+
+```js
+const subtle = crypto.subtle, enc = new TextEncoder();
+const FORMAT = 'dpdr-link-codes-v1';
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+const hmacKey = (raw, use) => subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, [use]);
+const hmac = async (raw, msg) => new Uint8Array(await subtle.sign('HMAC', await hmacKey(raw, 'sign'), msg));
+
+// The entry for a typed code, or null (unknown code, or the entry fails the
+// integrity check). atob() throws on a malformed entry: treat that as null.
+async function openLinkCode(input, publicFile) {
+  const code = enc.encode(input.trim().toUpperCase());
+  const lookup = new Uint8Array(await subtle.digest('SHA-256', code));
+  const entry = publicFile.codes[hex(lookup)];
+  if (!entry) return null;                                   // unknown code
+  const raw = Uint8Array.from(atob(entry), (c) => c.charCodeAt(0));
+  if (raw.length !== 160) return null;
+  const ct = raw.slice(0, 128), tag = raw.slice(128);
+  const encKey = await hmac(code, enc.encode(FORMAT + ' encryption key'));
+  const macKey = await hmac(code, enc.encode(FORMAT + ' integrity key'));
+  const signed = new Uint8Array([...enc.encode(FORMAT), 0, ...lookup, ...ct]);
+  if (!(await subtle.verify('HMAC', await hmacKey(macKey, 'verify'), tag, signed))) return null;
+  const pt = new Uint8Array(128);
+  for (let i = 0; i < 4; i++) {
+    const ks = await hmac(encKey, new Uint8Array([0, 0, 0, i]));
+    for (let j = 0; j < 32; j++) pt[32 * i + j] = ct[32 * i + j] ^ ks[j];
+  }
+  return JSON.parse(new TextDecoder('ascii').decode(pt));   // {group, link_id, phase, slot}
+}
+```
+
+`crypto.subtle` exists only on secure pages: https, which covers GitHub
+Pages and Pavlovia, or `localhost`.
+
+**Test vectors:** `tools/link_codes_test_vectors.json`. Its codes
+(`TESTVECTRA23`, `TESTVECTRB45`, `TESTVECTRC67`, `TESTVECTRD89`) are
+reserved: the script never generates them, so they are in no real table.
+Two of the inputs are lower case or have surrounding spaces, to test the
+normalisation.
+
+- **Each vector:** the input, the normalised code, `L`, `KE`, `KM`, `P`,
+  `X`, `T`, the entry, and the decrypted object.
+- **`must_fail`:** five entries that must be rejected. They are a flipped
+  ciphertext bit, a flipped tag bit, another code's entry, a code differing
+  in one character, and an entry cut short.
+
+To regenerate the vectors, run
+`python3 tools/make_link_codes.py --make-test-vectors tools/link_codes_test_vectors.json`.
+The self-test checks that the file matches the script.
+
+**A note on strength.** A 12-character code has about 59 bits of
+randomness. Someone with the public file could, in principle, test
+guessed codes against it offline. Finding any valid code among a few
+hundred would take days of dedicated GPU time, far beyond what anyone
+would spend to change condition.
+
+#### Self-test
+
+```bash
+python3 tools/test_make_link_codes.py
+```
+
+It runs everything in a temporary folder outside the repository and prints
+`OK` at the end:
+
+- **Your runs:** first run, refusal to overwrite, and `--extend` with
+  hand-typed columns (including Japanese text, line breaks, commas and an
+  extra column) kept as they were.
+- **Spreadsheet files:** tables saved with and without a byte order mark,
+  and as a spreadsheet saves them.
+- **`--verify`:** passing, and failing after a dozen deliberate edits.
+- **The scheme:** the test vectors.
+- **Safety:** the refusal inside the repository.
+
 ---
 
 ## 7. Pavlovia

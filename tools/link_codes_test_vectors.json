@@ -1,0 +1,101 @@
+{
+ "format": "dpdr-link-codes-v1",
+ "about": "Test vectors for the link code entries (see SETUP.md, Link codes). The codes here are reserved: the script never generates them, so they are in no real table. \"input\" is what is typed; \"code\" is it with surrounding spaces removed and upper-cased. Keys and ciphertext are lower-case hex; \"plaintext\" is the 128 decrypted bytes (ASCII, padded with spaces). Every \"must_fail\" entry has to fail the integrity check (or be rejected as malformed).",
+ "vectors": [
+  {
+   "input": "  TESTVECTRA23 ",
+   "code": "TESTVECTRA23",
+   "lookup_key": "9a1e60feb981dc6012b570f74c2f192a01d77003f6b8cb13da6579e9ef502633",
+   "encryption_key_hex": "89d0091ab0f330e4ef4c60484b60a5ad5bbfd79609aeb15d01d5e1dc6461a5c5",
+   "integrity_key_hex": "4b1101da3686d5abeb89c90662244ac7bf7eaf28828fd749cb488da0a2eeb0b7",
+   "plaintext": "{\"group\":\"participant\",\"link_id\":\"test_participant_001\",\"phase\":\"test\",\"slot\":1}                                                ",
+   "ciphertext_hex": "816c55c8be74ec5df4f84c9ea17d9cbd95444182860f5539765458d6ccbeafff6a1e0168981917170aeca2c21307263b48ce197f2e5a57eaf549f2a34d872badbb0d3af27d4489788c51900bb587d0496b701e8ffb1ff000ef2b0c19a5799e3a6249ef2762eb9e0afcb0f8549ca95e37d32bf34b175874adf07f741427142c8b",
+   "tag_hex": "a9a7394534cbfbd8a41bde6b3ac40a365d9d56d9440734805adef875f5708923",
+   "entry": "gWxVyL507F30+EyeoX2cvZVEQYKGD1U5dlRY1sy+r/9qHgFomBkXFwrsosITByY7SM4Zfy5aV+r1SfKjTYcrrbsNOvJ9RIl4jFGQC7WH0ElrcB6P+x/wAO8rDBmleZ46YknvJ2Lrngr8sPhUnKleN9Mr80sXWHSt8H90FCcULIuppzlFNMv72KQb3ms6xAo2XZ1W2UQHNIBa3vh19XCJIw==",
+   "decrypted": {
+    "group": "participant",
+    "link_id": "test_participant_001",
+    "phase": "test",
+    "slot": 1
+   }
+  },
+  {
+   "input": "testvectrb45",
+   "code": "TESTVECTRB45",
+   "lookup_key": "7f89db532c05b661f6b1968c1c5b7731271fab5b71b946d2eabce9df36db2394",
+   "encryption_key_hex": "d5b440c43d57dc2623c6903ac5cd0442b5a4197db7b24cbaf170c8c28b55a854",
+   "integrity_key_hex": "c82d7819369b0ea61e89ba61d14cbd69f1b87a8017bb28bd46ee98c9b948ff80",
+   "plaintext": "{\"group\":\"control\",\"link_id\":\"main_control_064\",\"phase\":\"main\",\"slot\":64}                                                       ",
+   "ciphertext_hex": "253aaae1e98fa53005faeeaa69292c585e4e7f2b154b6d1388664b2d774716f3f2df7f804da8c6acdbd6570c9628e47483c30afd59798c0aa4ed99369fb51eb4452338ffcb555195151c22fca7f18fa61b23a4278d699d458f822e88e1d4f6d18218aa2350436e959c201cc4d17df1f98851ab638fac2ace9eff4e491f9d8fe5",
+   "tag_hex": "3d77d52bdcea0137dd11e62ff4d6c5128e4dac4d7aca9c94ddd4993eb7ef0a8f",
+   "entry": "JTqq4emPpTAF+u6qaSksWF5OfysVS20TiGZLLXdHFvPy33+ATajGrNvWVwyWKOR0g8MK/Vl5jAqk7Zk2n7UetEUjOP/LVVGVFRwi/Kfxj6YbI6QnjWmdRY+CLojh1PbRghiqI1BDbpWcIBzE0X3x+YhRq2OPrCrOnv9OSR+dj+U9d9Ur3OoBN90R5i/01sUSjk2sTXrKnJTd1Jk+t+8Kjw==",
+   "decrypted": {
+    "group": "control",
+    "link_id": "main_control_064",
+    "phase": "main",
+    "slot": 64
+   }
+  },
+  {
+   "input": "TESTVECTRC67",
+   "code": "TESTVECTRC67",
+   "lookup_key": "e060f767d7a3dc4d4bb16c7ed5f9c453dc6ff3f2199bc90b9a4687e620b05fe7",
+   "encryption_key_hex": "99ea1664e2853759ce18cb6928f3b899cf97892ea1df7298c3a2686e1b93b408",
+   "integrity_key_hex": "2083489c3b5163de16267cf2b3011da94fd1a82937948236a928079815c8d596",
+   "plaintext": "{\"group\":\"participant\",\"link_id\":\"pilot_participant_016\",\"phase\":\"pilot\",\"slot\":16}                                             ",
+   "ciphertext_hex": "f843f75b50ac532d74172850455aa3d21e4da53be763ef2b4b5a7c71e67a238833ca7a6833d6dbe4e4e3f3a2ac477914a56f74ce3b4fea8ab06f96c83cc3e3ec4e9d472e779bbd79b873133e120fb91fabff29abcbfcd211164d9668c08a7475e8f948ceaf4654ed67be471c163c9eaca52cb20edc753e68559c86aad9705513",
+   "tag_hex": "6bfaa0ebd3487e2cffb2ac2405077ae9f3b9c2ac95f088cd51b6cef5ef7b9631",
+   "entry": "+EP3W1CsUy10FyhQRVqj0h5NpTvnY+8rS1p8ceZ6I4gzynpoM9bb5OTj86KsR3kUpW90zjtP6oqwb5bIPMPj7E6dRy53m715uHMTPhIPuR+r/ymry/zSERZNlmjAinR16PlIzq9GVO1nvkccFjyerKUssg7cdT5oVZyGqtlwVRNr+qDr00h+LP+yrCQFB3rp87nCrJXwiM1Rts7173uWMQ==",
+   "decrypted": {
+    "group": "participant",
+    "link_id": "pilot_participant_016",
+    "phase": "pilot",
+    "slot": 16
+   }
+  },
+  {
+   "input": "TestVectrD89",
+   "code": "TESTVECTRD89",
+   "lookup_key": "d3339a28e7462de8ab563826126c2a9b4e33055dc2ac563637c06f1cd5b2ae7c",
+   "encryption_key_hex": "a25cfda1a14c98876977c5f4a28fcb2ff3918955ecd7fd4e9aaeb33257bbffd3",
+   "integrity_key_hex": "7ac9778583a771301d1a1b78ed746cfc4fc97e1539e9100f65055e7511b1eebd",
+   "plaintext": "{\"group\":\"participant\",\"link_id\":\"main_participant_065\",\"phase\":\"main\",\"slot\":65}                                               ",
+   "ciphertext_hex": "a26e8aad5568ec68aacb71717414425e5915438be1193a0a861f0c9020bdcf05237a7fe6bc95e5b5f7b4cdb04e32ec59ede6e1078fc8f703a36151963df15cccbf997cf9f579bd2bcd496ff871380fc3a3310285dc23221c1fb4e2d3e9ace2ee5251cf015c6e82624a668e0d6fb30172e7d89c402ffa2691c9884dc50654319d",
+   "tag_hex": "c57426f3fdb56e82d4c1ca8af5a328a6fcd670b4fb2a05984a3952522b248cd4",
+   "entry": "om6KrVVo7Giqy3FxdBRCXlkVQ4vhGToKhh8MkCC9zwUjen/mvJXltfe0zbBOMuxZ7ebhB4/I9wOjYVGWPfFczL+ZfPn1eb0rzUlv+HE4D8OjMQKF3CMiHB+04tPprOLuUlHPAVxugmJKZo4Nb7MBcufYnEAv+iaRyYhNxQZUMZ3FdCbz/bVugtTByor1oyim/NZwtPsqBZhKOVJSKySM1A==",
+   "decrypted": {
+    "group": "participant",
+    "link_id": "main_participant_065",
+    "phase": "main",
+    "slot": 65
+   }
+  }
+ ],
+ "must_fail": [
+  {
+   "why": "one bit of the ciphertext changed",
+   "input": "  TESTVECTRA23 ",
+   "entry": "gGxVyL507F30+EyeoX2cvZVEQYKGD1U5dlRY1sy+r/9qHgFomBkXFwrsosITByY7SM4Zfy5aV+r1SfKjTYcrrbsNOvJ9RIl4jFGQC7WH0ElrcB6P+x/wAO8rDBmleZ46YknvJ2Lrngr8sPhUnKleN9Mr80sXWHSt8H90FCcULIuppzlFNMv72KQb3ms6xAo2XZ1W2UQHNIBa3vh19XCJIw=="
+  },
+  {
+   "why": "one bit of the tag changed",
+   "input": "  TESTVECTRA23 ",
+   "entry": "gWxVyL507F30+EyeoX2cvZVEQYKGD1U5dlRY1sy+r/9qHgFomBkXFwrsosITByY7SM4Zfy5aV+r1SfKjTYcrrbsNOvJ9RIl4jFGQC7WH0ElrcB6P+x/wAO8rDBmleZ46YknvJ2Lrngr8sPhUnKleN9Mr80sXWHSt8H90FCcULIuppzlFNMv72KQb3ms6xAo2XZ1W2UQHNIBa3vh19XCJow=="
+  },
+  {
+   "why": "another code's entry (entries swapped)",
+   "input": "  TESTVECTRA23 ",
+   "entry": "JTqq4emPpTAF+u6qaSksWF5OfysVS20TiGZLLXdHFvPy33+ATajGrNvWVwyWKOR0g8MK/Vl5jAqk7Zk2n7UetEUjOP/LVVGVFRwi/Kfxj6YbI6QnjWmdRY+CLojh1PbRghiqI1BDbpWcIBzE0X3x+YhRq2OPrCrOnv9OSR+dj+U9d9Ur3OoBN90R5i/01sUSjk2sTXrKnJTd1Jk+t+8Kjw=="
+  },
+  {
+   "why": "a different code (last character changed)",
+   "input": "TESTVECTRA24",
+   "entry": "gWxVyL507F30+EyeoX2cvZVEQYKGD1U5dlRY1sy+r/9qHgFomBkXFwrsosITByY7SM4Zfy5aV+r1SfKjTYcrrbsNOvJ9RIl4jFGQC7WH0ElrcB6P+x/wAO8rDBmleZ46YknvJ2Lrngr8sPhUnKleN9Mr80sXWHSt8H90FCcULIuppzlFNMv72KQb3ms6xAo2XZ1W2UQHNIBa3vh19XCJIw=="
+  },
+  {
+   "why": "entry cut short",
+   "input": "  TESTVECTRA23 ",
+   "entry": "gWxVyL507F30+EyeoX2cvZVEQYKGD1U5dlRY1sy+r/9qHgFomBkXFwrsosITByY7SM4Zfy5aV+r1SfKjTYcrrbsNOvJ9RIl4jFGQC7WH0ElrcB6P+x/wAO8rDBmleZ46YknvJ2Lrngr8sPhUnKleN9Mr80sXWHSt8H90FCcULIuppzlFNMv72KQb3ms6xAo2XZ1W2UQHNIBa3vh19XCJ"
+  }
+ ]
+}

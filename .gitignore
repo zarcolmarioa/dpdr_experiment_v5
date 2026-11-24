@@ -1,0 +1,5 @@
+# Link codes (tools/make_link_codes.py): the private table and manifest
+# must never be committed. The script also refuses to write them inside
+# this repository; this is the second safeguard.
+link_codes_private.csv
+link_codes_manifest.txt
